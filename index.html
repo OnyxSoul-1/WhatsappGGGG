@@ -67,7 +67,7 @@
         .camera-overlay { position: fixed; inset: 0; background: #000; z-index: 9999; display: none; flex-direction: column; }
         .camera-overlay.active { display: flex; }
         #cameraVideo { width: 100%; height: 100%; object-fit: cover; }
-        .camera-controls { position: absolute; bottom: 40px; left: 0; right: 0; display: flex; justify-content: center; gap: 20px; align-items: center; }
+        .camera-controls { position: absolute; bottom: 40px; left: 0; right: 0; display: flex; justify-content: center; gap: 20px; align-items: center; flex-wrap: wrap; padding: 0 10px; }
         .record-btn { width: 70px; height: 70px; border-radius: 50%; background: white; border: 4px solid rgba(255,255,255,0.5); cursor: pointer; }
         .record-btn.recording { background: #ef4444; border-color: #fff; animation: pulse 1s infinite; }
         @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
@@ -76,7 +76,6 @@
         .filter-btn { background: rgba(255,255,255,0.2); color: white; padding: 8px 12px; border-radius: 20px; cursor: pointer; border: none; font-size: 12px; }
         .filter-btn.active { background: #00a884; }
         
-        /* Boot Screen */
         #bootScreen {
             position: fixed; inset: 0; background: #111b21; z-index: 99999;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -131,7 +130,13 @@
             <div class="p-2 bg-wa_bg border-b border-wa_border">
                 <input type="text" id="searchUser" onkeyup="filterUsers()" placeholder="Search or add people..." class="w-full bg-wa_input px-4 py-2 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-wa_green">
             </div>
-            <div id="userList" class="flex-1 overflow-y-auto p-2"></div>
+            <div id="userList" class="flex-1 overflow-y-auto p-2">
+                <!-- Note to Self Button -->
+                <div onclick="openNotes()" class="flex items-center p-3 hover:bg-wa_header cursor-pointer border-b border-wa_border transition mb-2 bg-wa_input/30 rounded-lg">
+                    <img src="https://img.icons8.com/color/96/edit--v1.png" class="w-12 h-12 rounded-full mr-3">
+                    <div><h3 class="font-bold text-wa_green">Note to Self</h3><p class="text-xs text-gray-400">Your private notes</p></div>
+                </div>
+            </div>
         </div>
 
         <!-- CHAT AREA -->
@@ -157,8 +162,8 @@
                     </div>
                     <div class="flex gap-4 text-gray-400 text-lg items-center">
                         <input type="color" id="textColorPicker" value="#ffffff" onchange="changeTextColor(this.value)" class="w-6 h-6 rounded cursor-pointer bg-transparent border-none" title="Text Color">
-                        <button onclick="startCall('video')" class="hover:text-white"><i class="fas fa-video"></i></button>
-                        <button onclick="startCall('voice')" class="hover:text-white"><i class="fas fa-phone"></i></button>
+                        <button id="callVideoBtn" onclick="startCall('video')" class="hover:text-white"><i class="fas fa-video"></i></button>
+                        <button id="callVoiceBtn" onclick="startCall('voice')" class="hover:text-white"><i class="fas fa-phone"></i></button>
                     </div>
                 </div>
                 
@@ -178,9 +183,9 @@
                         <option value="0.75">Monster</option>
                     </select>
 
-                    <button onclick="openCamera()" class="text-wa_green text-xl p-2 cursor-pointer hover:scale-110 transition"><i class="fas fa-camera"></i></button>
+                    <button id="cameraBtn" onclick="openCamera()" class="text-wa_green text-xl p-2 cursor-pointer hover:scale-110 transition"><i class="fas fa-camera"></i></button>
                     <button id="micBtn" onmousedown="startRecording()" onmouseup="stopRecording()" ontouchstart="startRecording()" ontouchend="stopRecording()" class="text-wa_green text-xl p-2 cursor-pointer select-none"><i class="fas fa-microphone"></i></button>
-                    <button onclick="sendText()" class="text-wa_green text-xl p-2"><i class="fas fa-paper-plane"></i></button>
+                    <button id="sendBtn" onclick="sendText()" class="text-wa_green text-xl p-2"><i class="fas fa-paper-plane"></i></button>
                 </div>
             </div>
         </div>
@@ -240,9 +245,20 @@
                 <button onclick="saveRingtoneUrl()" class="w-full bg-wa_green py-1 rounded text-sm font-bold text-white">Save Ringtone</button>
             </div>
 
-            <div class="flex gap-3">
+            <!-- Existing Save/Cancel Buttons -->
+            <div class="flex gap-3 mb-4">
                 <button onclick="closeProfileEdit()" class="flex-1 bg-gray-600 py-2 rounded-lg">Cancel</button>
-                <button onclick="saveProfile()" class="flex-1 bg-wa_green py-2 rounded-lg font-bold">Save</button>
+                <button onclick="saveProfile()" class="flex-1 bg-wa_green py-2 rounded-lg font-bold">Save Changes</button>
+            </div>
+
+            <!-- NEW: Account Management Section -->
+            <div class="border-t border-wa_border pt-4 flex flex-col gap-3">
+                <button onclick="logoutAccount()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-bold transition">
+                    <i class="fas fa-sign-out-alt mr-2"></i> Logout
+                </button>
+                <button onclick="deleteAccount()" class="w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg font-bold transition">
+                    <i class="fas fa-trash-alt mr-2"></i> Delete My Account
+                </button>
             </div>
         </div>
     </div>
@@ -392,6 +408,24 @@
             }
         }
 
+        // ACCOUNT MANAGEMENT
+        function logoutAccount() {
+            if(confirm("Are you sure you want to logout?")) {
+                localStorage.removeItem('diaa_user');
+                location.reload(); 
+            }
+        }
+
+        function deleteAccount() {
+            if(confirm("WARNING: This will delete your profile and settings forever. Are you sure?")) {
+                if(confirm("Really sure? This cannot be undone!")) {
+                    localStorage.clear(); 
+                    socket.emit('register_user', { username: myData.username, avatar: '', online: false });
+                    location.reload();
+                }
+            }
+        }
+
         // RINGTONE FUNCTIONS
         function uploadRingtone(e) {
             const file = e.target.files[0];
@@ -431,13 +465,42 @@
 
         function renderUserList(usersToRender) {
             const list = document.getElementById('userList');
-            list.innerHTML = '';
-            if(usersToRender.length === 0) { list.innerHTML = '<p class="text-center text-gray-500 mt-4 text-sm">No users found.</p>'; return; }
-            usersToRender.forEach(u => {
-                list.innerHTML += `<div onclick="openChat('${u.username}', '${u.avatar}')" class="flex items-center p-3 hover:bg-wa_header cursor-pointer border-b border-wa_border transition">
-                    <img src="${u.avatar}" class="w-12 h-12 rounded-full mr-3">
-                    <div><h3 class="font-bold">${u.username}</h3><p class="text-xs text-gray-400">Tap to chat</p></div></div>`;
-            });
+            // Keep the Note to Self button
+            const noteBtn = `<div onclick="openNotes()" class="flex items-center p-3 hover:bg-wa_header cursor-pointer border-b border-wa_border transition mb-2 bg-wa_input/30 rounded-lg">
+                    <img src="https://img.icons8.com/color/96/edit--v1.png" class="w-12 h-12 rounded-full mr-3">
+                    <div><h3 class="font-bold text-wa_green">Note to Self</h3><p class="text-xs text-gray-400">Your private notes</p></div>
+                </div>`;
+            
+            let html = noteBtn;
+            if(usersToRender.length === 0) { html += '<p class="text-center text-gray-500 mt-4 text-sm">No users found.</p>'; }
+            else {
+                usersToRender.forEach(u => {
+                    html += `
+                    <div class="flex items-center justify-between p-3 hover:bg-wa_header border-b border-wa_border transition">
+                        <div class="flex items-center cursor-pointer flex-1" onclick="openChat('${u.username}', '${u.avatar}')">
+                            <img src="${u.avatar}" class="w-12 h-12 rounded-full mr-3">
+                            <div><h3 class="font-bold">${u.username}</h3><p class="text-xs text-gray-400">Tap to chat</p></div>
+                        </div>
+                        <button onclick="blockUser('${u.username}')" class="text-red-500 hover:text-red-400 p-2" title="Block/Remove">
+                            <i class="fas fa-user-slash"></i>
+                        </button>
+                    </div>`;
+                });
+            }
+            list.innerHTML = html;
+        }
+
+        function blockUser(username) {
+            if(confirm(`Do you want to block and remove ${username} from your list?`)) {
+                allUsers = allUsers.filter(u => u.username !== username);
+                renderUserList(allUsers);
+                let blocked = JSON.parse(localStorage.getItem('diaa_blocked') || '[]');
+                if(!blocked.includes(username)) {
+                    blocked.push(username);
+                    localStorage.setItem('diaa_blocked', JSON.stringify(blocked));
+                }
+                alert(`${username} has been blocked!`);
+            }
         }
 
         function filterUsers() {
@@ -455,14 +518,71 @@
             closeAddModal();
         }
 
+        // NOTE TO SELF LOGIC
+        function openNotes() {
+            activeUser = { username: 'Note to Self', avatar: 'https://img.icons8.com/color/96/edit--v1.png', isNote: true };
+            document.getElementById('emptyState').classList.add('hidden');
+            document.getElementById('activeChatUI').classList.remove('hidden');
+            document.getElementById('chatName').innerText = 'Note to Self';
+            document.getElementById('chatAvatar').src = 'https://img.icons8.com/color/96/edit--v1.png';
+            
+            // Hide call and camera buttons for notes
+            document.getElementById('callVideoBtn').style.display = 'none';
+            document.getElementById('callVoiceBtn').style.display = 'none';
+            document.getElementById('cameraBtn').style.display = 'none';
+
+            loadNotes();
+
+            if (window.innerWidth < 768) {
+                document.getElementById('sidebar').style.display = 'none';
+                document.getElementById('chatArea').style.display = 'flex';
+            }
+        }
+
+        function loadNotes() {
+            const area = document.getElementById('messagesArea');
+            area.innerHTML = '';
+            const notes = JSON.parse(localStorage.getItem('diaa_notes') || '[]');
+            notes.forEach(note => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'message-wrapper flex flex-col max-w-[70%] self-end';
+                wrapper.innerHTML = `<div class="glass-bubble text-white px-3 py-2 rounded-lg shadow text-sm relative group">
+                    <div class="message-text" style="color: ${note.color || '#ffffff'}">${note.text}</div>
+                    <div class="flex justify-between items-center mt-1 gap-2">
+                        <span class="text-[10px] text-gray-300">${note.time}</span>
+                        <button onclick="deleteNote('${note.id}', this)" class="text-[10px] text-red-400 hover:text-red-300"><i class="fas fa-trash"></i></button>
+                    </div></div>`;
+                area.appendChild(wrapper);
+            });
+            area.scrollTop = area.scrollHeight;
+        }
+
+        function saveNote(msg) {
+            const notes = JSON.parse(localStorage.getItem('diaa_notes') || '[]');
+            notes.push(msg);
+            localStorage.setItem('diaa_notes', JSON.stringify(notes));
+        }
+
+        function deleteNote(id, btn) {
+            let notes = JSON.parse(localStorage.getItem('diaa_notes') || '[]');
+            notes = notes.filter(n => n.id !== id);
+            localStorage.setItem('diaa_notes', JSON.stringify(notes));
+            btn.closest('.message-wrapper').remove();
+        }
+
         function openChat(username, avatar) {
-            activeUser = { username, avatar };
+            activeUser = { username, avatar, isNote: false };
             document.getElementById('emptyState').classList.add('hidden');
             document.getElementById('activeChatUI').classList.remove('hidden');
             document.getElementById('chatName').innerText = username;
             document.getElementById('chatAvatar').src = avatar;
             document.getElementById('messagesArea').innerHTML = '';
             sentMessages.clear();
+
+            // Show call and camera buttons for normal chats
+            document.getElementById('callVideoBtn').style.display = 'block';
+            document.getElementById('callVoiceBtn').style.display = 'block';
+            document.getElementById('cameraBtn').style.display = 'block';
 
             if (window.innerWidth < 768) {
                 document.getElementById('sidebar').style.display = 'none';
@@ -485,15 +605,21 @@
             if (text && activeUser) {
                 const msgId = Date.now().toString() + Math.random().toString();
                 const msg = { id: msgId, from: myData.username, to: activeUser.username, text, type: 'text', time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}), color: document.getElementById('textColorPicker').value };
-                socket.emit('send_message', msg);
-                appendMessage(msg);
+                
+                if (activeUser.isNote) {
+                    saveNote(msg);
+                    loadNotes();
+                } else {
+                    socket.emit('send_message', msg);
+                    appendMessage(msg);
+                }
                 input.value = '';
             }
         }
 
         function sendFile(event) {
             const file = event.target.files[0];
-            if (file && activeUser) {
+            if (file && activeUser && !activeUser.isNote) {
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     const msgId = Date.now().toString() + Math.random().toString();
@@ -517,7 +643,7 @@
         }
 
         socket.on('receive_message', (msg) => {
-            if ((msg.to === myData.username || msg.from === myData.username) && activeUser && (msg.from === activeUser.username || msg.to === activeUser.username)) {
+            if (!activeUser.isNote && (msg.to === myData.username || msg.from === myData.username) && activeUser && (msg.from === activeUser.username || msg.to === activeUser.username)) {
                 if (!sentMessages.has(msg.id)) { appendMessage(msg); sentMessages.add(msg.id); }
             }
         });
@@ -551,7 +677,7 @@
         socket.on('message_deleted', (data) => { document.querySelectorAll('.message-wrapper').forEach(msgEl => { if (msgEl.innerHTML.includes(`'${data.id}'`)) msgEl.remove(); }); });
 
         async function startRecording() {
-            if (isRecording) return;
+            if (isRecording || (activeUser && activeUser.isNote)) return;
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 mediaRecorder = new MediaRecorder(stream);
@@ -582,17 +708,19 @@
                 const msgId = Date.now().toString() + Math.random().toString();
                 const msg = { id: msgId, from: myData.username, to: activeUser.username, text: reader.result, type: 'voice', time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}), color: document.getElementById('textColorPicker').value };
                 socket.emit('send_message', msg);
+                appendMessage(msg);
                 audioChunks = [];
             };
         }
 
         async function openCamera() {
+            if (activeUser && activeUser.isNote) return;
             try {
                 if (cameraStream) cameraStream.getTracks().forEach(track => track.stop());
                 cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facingMode }, audio: true });
                 const videoEl = document.getElementById('cameraVideo');
                 videoEl.srcObject = cameraStream;
-                videoEl.className = ''; // Reset filters
+                videoEl.className = ''; 
                 document.getElementById('cameraOverlay').classList.add('active');
                 currentCameraFilter = '';
             } catch (err) { alert("Camera access denied!"); }
@@ -602,8 +730,6 @@
             const videoEl = document.getElementById('cameraVideo');
             videoEl.className = filterClass;
             currentCameraFilter = filterClass;
-            
-            // Update active button
             document.querySelectorAll('.filter-btn').forEach(btn => {
                 btn.classList.remove('active');
                 if (btn.getAttribute('onclick').includes(filterClass)) btn.classList.add('active');
@@ -653,19 +779,25 @@
                     color: document.getElementById('textColorPicker').value 
                 };
                 socket.emit('send_message', msg);
+                appendMessage(msg);
                 closeCamera();
             };
         }
 
         async function startCall(type) {
-            if (!activeUser) return;
+            if (!activeUser || activeUser.isNote) return;
             callType = type;
             try {
-                localStream = await navigator.mediaDevices.getUserMedia({ video: type === 'video' ? true : false, audio: true });
+                localStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: type === 'video' ? { facingMode: "user" } : false, 
+                    audio: true 
+                });
                 const localVideo = document.getElementById('localVideo');
                 localVideo.srcObject = localStream;
-                localVideo.play().catch(e => console.log("Local play error:", e));
+                localVideo.play().catch(e => setTimeout(() => localVideo.play(), 500));
                 localVideo.style.display = type === 'video' ? 'block' : 'none';
+                localVideo.style.opacity = '1'; 
+                
                 document.getElementById('activeCallUI').classList.remove('hidden');
                 document.getElementById('activeCallName').innerText = activeUser.username;
                 document.getElementById('activeCallAvatar').src = activeUser.avatar;
@@ -673,7 +805,6 @@
                 peer = new SimplePeer({ initiator: true, trickle: false, stream: localStream, config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] } });
                 peer.on('signal', data => { socket.emit('call_user', { userToCall: activeUser.username, signal: data, from: myData.username, name: myData.username, type: type }); });
                 peer.on('stream', remoteStream => { const remoteVideo = document.getElementById('remoteVideo'); remoteVideo.srcObject = remoteStream; remoteVideo.play().catch(e => console.log("Remote play error:", e)); document.getElementById('callStatus').innerText = "Connected"; });
-                // Don't play ringtone when making a call
             } catch (err) { console.error("Call Error:", err); alert("Camera error: " + err.message); }
         }
 
@@ -684,7 +815,6 @@
             document.getElementById('incomingName').innerText = `${data.name} is calling...`;
             document.getElementById('incomingCallType').innerText = callType === 'video' ? 'Video Call' : 'Voice Call';
             document.getElementById('incomingCallUI').classList.remove('hidden');
-            // ONLY play ringtone when receiving a call
             document.getElementById('ringtone').play();
         });
 
@@ -764,23 +894,18 @@
                 imageLayer.style.backgroundImage = 'none';
                 videoLayer.src = url;
                 videoLayer.classList.remove('hidden');
-                console.log("Video background applied");
             } else {
                 videoLayer.classList.add('hidden');
                 videoLayer.src = "";
                 imageLayer.style.backgroundImage = `url('${url}')`;
-                console.log("Image background applied:", url);
             }
         }
 
         function loadSavedBg() {
             const saved = localStorage.getItem('diaa_bg');
             const savedType = localStorage.getItem('diaa_bg_type') || 'image';
-            if (saved) { 
-                applyBackground(saved, savedType === 'video'); 
-            } else {
-                applyBackground('https://images.unsplash.com/photo-1462331940025-496dfbfc7564?q=80&w=2000&auto=format&fit=crop', false); 
-            }
+            if (saved) { applyBackground(saved, savedType === 'video'); }
+            else { applyBackground('https://images.unsplash.com/photo-1462331940025-496dfbfc7564?q=80&w=2000&auto=format&fit=crop', false); }
         }
 
         function changeTextColor(color) { document.documentElement.style.setProperty('--msg-color', color); localStorage.setItem('diaa_text_color', color); }
