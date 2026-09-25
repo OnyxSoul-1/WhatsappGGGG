@@ -18,7 +18,7 @@
                 extend: {
                     colors: {
                         wa_bg: '#111b21', wa_header: '#202c33', wa_input: '#2a3942',
-                        wa_green: '#00a884', wa_bubble_out: '#005c4b', wa_bubble_in: '#202c33', wa_border: '#222d34'
+                        wa_green: '#00a884', wa_bubble_out: 'rgba(0, 92, 75, 0.7)', wa_bubble_in: 'rgba(32, 44, 51, 0.7)', wa_border: '#222d34'
                     }
                 }
             }
@@ -27,9 +27,16 @@
     <style>
         body { background-color: #0b141a; color: #e9edef; font-family: sans-serif; }
         ::-webkit-scrollbar { width: 5px; } ::-webkit-scrollbar-thumb { background: #374151; }
-        video { width: 100%; height: 100%; object-fit: cover; background: #000; }
         
-        .chat-bg-overlay { position: absolute; inset: 0; background-color: rgba(11, 20, 26, 0.85); pointer-events: none; z-index: 0; }
+        /* GLASSY VIDEO STYLING */
+        video { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: cover; 
+            background: #000;
+        }
+        
+        .chat-bg-overlay { position: absolute; inset: 0; background-color: rgba(11, 20, 26, 0.7); pointer-events: none; z-index: 0; }
         .chat-bg-image { position: absolute; inset: 0; background-size: cover; background-position: center; z-index: -1; }
         
         @keyframes pulse-ring { 0% { transform: scale(0.8); opacity: 0.5; } 100% { transform: scale(2.5); opacity: 0; } }
@@ -37,9 +44,26 @@
         
         .modal-bg { background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); }
         
-        /* Fix video display */
-        #remoteVideo, #localVideo {
-            background: #111;
+        /* GLASSY MESSAGE BUBBLES */
+        .glass-bubble {
+            background: rgba(0, 92, 75, 0.6);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .glass-bubble-received {
+            background: rgba(32, 44, 51, 0.6);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .message-actions {
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .message-wrapper:hover .message-actions {
+            opacity: 1;
         }
     </style>
 </head>
@@ -97,8 +121,8 @@
                         <h2 id="chatName" class="text-lg"></h2>
                     </div>
                     <div class="flex gap-4 text-gray-400 text-lg">
-                        <button onclick="startCall('video')"><i class="fas fa-video hover:text-white"></i></button>
-                        <button onclick="startCall('voice')"><i class="fas fa-phone hover:text-white"></i></button>
+                        <button onclick="startCall('video')" title="Video Call"><i class="fas fa-video hover:text-white"></i></button>
+                        <button onclick="startCall('voice')" title="Voice Call"><i class="fas fa-phone hover:text-white"></i></button>
                     </div>
                 </div>
                 <div id="messagesArea" class="flex-1 overflow-y-auto p-4 flex flex-col gap-2"></div>
@@ -160,6 +184,7 @@
             <img id="incomingAvatar" src="" class="relative w-32 h-32 rounded-full object-cover border-4 border-wa_bg z-10">
         </div>
         <h2 id="incomingName" class="text-3xl font-light mb-2">Incoming Call...</h2>
+        <p id="incomingCallType" class="text-gray-400 mb-12">Video Call</p>
         <div class="flex gap-12 mt-12">
             <button onclick="declineCall()" class="bg-red-500 w-16 h-16 rounded-full flex items-center justify-center text-2xl"><i class="fas fa-phone-slash"></i></button>
             <button onclick="acceptCall()" class="bg-wa_green w-16 h-16 rounded-full flex items-center justify-center text-2xl"><i class="fas fa-phone"></i></button>
@@ -189,7 +214,7 @@
         // CONFIGURATION
         // ==========================================
         const SERVER_URL = "https://whatsappgggg.onrender.com/"; // PASTE YOUR RENDER URL HERE!
-        const FAMILY_SECRET_PASSWORD = "hassan123"; // CHANGE THIS TO YOUR SECRET PASSWORD!
+        const FAMILY_SECRET_PASSWORD = "hassan123";
         
         const socket = io(SERVER_URL);
         let myData = null;
@@ -202,9 +227,10 @@
         let audioChunks = [];
         let incomingSignal = null;
         let incomingCaller = null;
+        let callType = 'video'; // 'voice' or 'video'
         let allUsers = [];
         let isRecording = false;
-        let sentMessages = new Set(); // FIX: Track sent messages to prevent duplicates
+        let sentMessages = new Set();
 
         // ==========================================
         // 1. LOGIN & SAVING
@@ -291,7 +317,7 @@
         }
 
         // ==========================================
-        // 3. FAST MESSAGING (FIXED DUPLICATES)
+        // 3. MESSAGING WITH DELETE
         // ==========================================
         function openChat(username, avatar) {
             activeUser = { username, avatar };
@@ -300,7 +326,7 @@
             document.getElementById('chatName').innerText = username;
             document.getElementById('chatAvatar').src = avatar;
             document.getElementById('messagesArea').innerHTML = '';
-            sentMessages.clear(); // Clear sent messages when switching chats
+            sentMessages.clear();
         }
 
         function sendText() {
@@ -316,23 +342,19 @@
                     type: 'text', 
                     time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) 
                 };
-                
-                // Only send to server, don't append locally yet
                 socket.emit('send_message', msg);
+                appendMessage(msg);
                 input.value = '';
             }
         }
 
         socket.on('receive_message', (msg) => {
-            // FIX: Only show message if it's for this chat AND we haven't shown it before
             if ((msg.to === myData.username || msg.from === myData.username) && 
                 activeUser && 
                 (msg.from === activeUser.username || msg.to === activeUser.username)) {
-                
-                // Check if we already displayed this message
                 if (!sentMessages.has(msg.id)) {
                     appendMessage(msg);
-                    sentMessages.add(msg.id); // Mark as displayed
+                    sentMessages.add(msg.id);
                 }
             }
         });
@@ -340,24 +362,53 @@
         function appendMessage(msg) {
             const area = document.getElementById('messagesArea');
             const isMe = msg.from === myData.username;
-            const bg = isMe ? 'bg-wa_bubble_out self-end' : 'bg-wa_bubble_in self-start';
+            const bubbleClass = isMe ? 'glass-bubble self-end' : 'glass-bubble-received self-start';
+            
             let content = msg.text;
-            if (msg.type === 'voice') content = `<audio controls src="${msg.text}" class="w-48"></audio>`;
+            if (msg.type === 'voice') {
+                content = `<audio controls src="${msg.text}" class="w-48"></audio>`;
+            }
             
-            const html = `<div class="${bg} text-white px-3 py-2 rounded-lg max-w-[70%] shadow text-sm relative">
-                            ${content}
-                            <span class="text-[10px] text-gray-400 block text-right mt-1">${msg.time}</span>
-                          </div>`;
+            const wrapper = document.createElement('div');
+            wrapper.className = 'message-wrapper flex flex-col max-w-[70%] ' + (isMe ? 'self-end' : 'self-start');
             
-            area.insertAdjacentHTML('beforeend', html);
+            wrapper.innerHTML = `
+                <div class="${bubbleClass} text-white px-3 py-2 rounded-lg shadow text-sm relative group">
+                    ${content}
+                    <div class="flex justify-between items-center mt-1 gap-2">
+                        <span class="text-[10px] text-gray-300">${msg.time}</span>
+                        ${isMe ? `<button onclick="deleteMessage('${msg.id}', this)" class="message-actions text-[10px] text-red-400 hover:text-red-300"><i class="fas fa-trash"></i></button>` : ''}
+                    </div>
+                </div>
+            `;
+            
+            area.appendChild(wrapper);
             area.scrollTop = area.scrollHeight;
         }
 
+        function deleteMessage(msgId, btnElement) {
+            const messageDiv = btnElement.closest('.message-wrapper');
+            messageDiv.remove();
+            // Optionally emit to server to delete for everyone
+            socket.emit('delete_message', { id: msgId, from: myData.username });
+        }
+
+        socket.on('message_deleted', (data) => {
+            // Remove message from all users
+            const messages = document.querySelectorAll('.message-wrapper');
+            messages.forEach(msgEl => {
+                const deleteBtn = msgEl.querySelector(`[onclick*="'${data.id}'"]`);
+                if (deleteBtn) {
+                    msgEl.remove();
+                }
+            });
+        });
+
         // ==========================================
-        // 4. VOICE NOTES (HOLD TO RECORD - FIXED)
+        // 4. VOICE NOTES (HOLD TO RECORD)
         // ==========================================
         async function startRecording() {
-            if (isRecording) return; // Prevent multiple starts
+            if (isRecording) return;
             
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -372,7 +423,6 @@
                 mediaRecorder.start();
                 isRecording = true;
                 
-                // Visual feedback
                 const btn = document.getElementById('micBtn');
                 btn.classList.add('text-red-500', 'animate-pulse');
                 btn.innerHTML = '<i class="fas fa-stop"></i>';
@@ -388,7 +438,6 @@
             
             if (mediaRecorder && mediaRecorder.state !== 'inactive') {
                 mediaRecorder.stop();
-                // Stop all audio tracks
                 mediaRecorder.stream.getTracks().forEach(track => track.stop());
             }
             
@@ -420,34 +469,35 @@
         }
 
         // ==========================================
-        // 5. VIDEO CALLS (FIXED BLACK SCREEN)
+        // 5. SEPARATE VOICE & VIDEO CALLS (FIXED)
         // ==========================================
         async function startCall(type) {
             if (!activeUser) return;
             
+            callType = type; // 'voice' or 'video'
+            
             try {
-                // Get camera and mic with better constraints
+                // VOICE CALL: Audio only
+                // VIDEO CALL: Audio + Video
                 localStream = await navigator.mediaDevices.getUserMedia({ 
                     video: type === 'video' ? { 
                         width: { ideal: 1280 },
                         height: { ideal: 720 },
                         facingMode: "user"
                     } : false, 
-                    audio: true 
+                    audio: true // Always have audio
                 });
                 
-                // Set local video immediately
                 const localVideo = document.getElementById('localVideo');
                 localVideo.srcObject = localStream;
                 localVideo.style.display = type === 'video' ? 'block' : 'none';
                 
-                // Show call UI
                 document.getElementById('activeCallUI').classList.remove('hidden');
                 document.getElementById('activeCallName').innerText = activeUser.username;
                 document.getElementById('activeCallAvatar').src = activeUser.avatar;
-                document.getElementById('callStatus').innerText = "Calling...";
+                document.getElementById('callStatus').innerText = type === 'video' ? "Video calling..." : "Voice calling...";
                 
-                // Initialize SimplePeer with better config
+                // Better WebRTC config
                 peer = new SimplePeer({ 
                     initiator: true, 
                     trickle: false, 
@@ -455,7 +505,8 @@
                     config: {
                         iceServers: [
                             { urls: 'stun:stun.l.google.com:19302' },
-                            { urls: 'stun:stun1.l.google.com:19302' }
+                            { urls: 'stun:stun1.l.google.com:19302' },
+                            { urls: 'stun:stun2.l.google.com:19302' }
                         ]
                     }
                 });
@@ -465,28 +516,33 @@
                         userToCall: activeUser.username, 
                         signal: data, 
                         from: myData.username, 
-                        name: myData.username 
+                        name: myData.username,
+                        type: type
                     });
                 });
 
                 peer.on('stream', remoteStream => {
-                    console.log('Received remote stream');
+                    console.log('✅ Received remote stream');
                     const remoteVideo = document.getElementById('remoteVideo');
                     remoteVideo.srcObject = remoteStream;
-                    remoteVideo.play().catch(e => console.log('Video play error:', e));
-                    document.getElementById('callStatus').innerText = "Connected";
+                    remoteVideo.play().catch(e => console.error('Video play error:', e));
+                    document.getElementById('callStatus').innerText = type === 'video' ? "Video connected" : "Voice connected";
                     document.getElementById('ringtone').pause();
                 });
 
                 peer.on('error', err => {
-                    console.error('Peer error:', err);
+                    console.error('❌ Peer error:', err);
                     document.getElementById('callStatus').innerText = "Connection error";
+                });
+
+                peer.on('connect', () => {
+                    console.log('✅ Peer connected');
                 });
 
                 document.getElementById('ringtone').play();
                 
             } catch (err) {
-                console.error('GetUserMedia error:', err);
+                console.error(' GetUserMedia error:', err);
                 alert("Camera/Mic access denied or not available!");
             }
         }
@@ -494,7 +550,10 @@
         socket.on('incoming_call', (data) => {
             incomingSignal = data.signal;
             incomingCaller = { username: data.from, name: data.name };
+            callType = data.type || 'video';
+            
             document.getElementById('incomingName').innerText = `${data.name} is calling...`;
+            document.getElementById('incomingCallType').innerText = callType === 'video' ? 'Video Call' : 'Voice Call';
             document.getElementById('incomingCallUI').classList.remove('hidden');
             document.getElementById('ringtone').play();
         });
@@ -507,17 +566,17 @@
                 document.getElementById('ringtone').pause();
 
                 localStream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { 
+                    video: callType === 'video' ? { 
                         width: { ideal: 1280 },
                         height: { ideal: 720 },
                         facingMode: "user"
-                    }, 
+                    } : false, 
                     audio: true 
                 });
                 
                 const localVideo = document.getElementById('localVideo');
                 localVideo.srcObject = localStream;
-                localVideo.style.display = 'block';
+                localVideo.style.display = callType === 'video' ? 'block' : 'none';
 
                 peer = new SimplePeer({ 
                     initiator: false, 
@@ -526,7 +585,8 @@
                     config: {
                         iceServers: [
                             { urls: 'stun:stun.l.google.com:19302' },
-                            { urls: 'stun:stun1.l.google.com:19302' }
+                            { urls: 'stun:stun1.l.google.com:19302' },
+                            { urls: 'stun:stun2.l.google.com:19302' }
                         ]
                     }
                 });
@@ -536,21 +596,21 @@
                 });
 
                 peer.on('stream', remoteStream => {
-                    console.log('Received remote stream');
+                    console.log('✅ Received remote stream');
                     const remoteVideo = document.getElementById('remoteVideo');
                     remoteVideo.srcObject = remoteStream;
-                    remoteVideo.play().catch(e => console.log('Video play error:', e));
-                    document.getElementById('callStatus').innerText = "Connected";
+                    remoteVideo.play().catch(e => console.error('Video play error:', e));
+                    document.getElementById('callStatus').innerText = callType === 'video' ? "Video connected" : "Voice connected";
                 });
 
                 peer.on('error', err => {
-                    console.error('Peer error:', err);
+                    console.error('❌ Peer error:', err);
                 });
 
                 peer.signal(incomingSignal);
                 
             } catch (err) {
-                console.error('Accept call error:', err);
+                console.error(' Accept call error:', err);
                 alert("Camera/Mic access denied!");
             }
         }
@@ -581,7 +641,6 @@
                 localStream = null;
             }
             
-            // Clear video sources
             document.getElementById('remoteVideo').srcObject = null;
             document.getElementById('localVideo').srcObject = null;
         }
@@ -595,7 +654,7 @@
         
         function toggleVideo() { 
             isVideoOff = !isVideoOff; 
-            if (localStream) {
+            if (localStream && callType === 'video') {
                 localStream.getVideoTracks()[0].enabled = !isVideoOff; 
             }
         }
