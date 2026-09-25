@@ -18,7 +18,7 @@
                 extend: {
                     colors: {
                         wa_bg: '#111b21', wa_header: '#202c33', wa_input: '#2a3942',
-                        wa_green: '#00a884', wa_bubble_out: 'rgba(0, 92, 75, 0.7)', wa_bubble_in: 'rgba(32, 44, 51, 0.7)', wa_border: '#222d34'
+                        wa_green: '#00a884', wa_border: '#222d34'
                     }
                 }
             }
@@ -28,43 +28,42 @@
         body { background-color: #0b141a; color: #e9edef; font-family: sans-serif; }
         ::-webkit-scrollbar { width: 5px; } ::-webkit-scrollbar-thumb { background: #374151; }
         
-        /* GLASSY VIDEO STYLING */
-        video { 
-            width: 100%; 
-            height: 100%; 
-            object-fit: cover; 
-            background: #000;
-        }
+        video { width: 100%; height: 100%; object-fit: cover; background: #000; }
         
-        .chat-bg-overlay { position: absolute; inset: 0; background-color: rgba(11, 20, 26, 0.7); pointer-events: none; z-index: 0; }
+        .chat-bg-overlay { position: absolute; inset: 0; background-color: rgba(11, 20, 26, 0.4); pointer-events: none; z-index: 0; }
         .chat-bg-image { position: absolute; inset: 0; background-size: cover; background-position: center; z-index: -1; }
         
         @keyframes pulse-ring { 0% { transform: scale(0.8); opacity: 0.5; } 100% { transform: scale(2.5); opacity: 0; } }
         .pulse-ring { animation: pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite; }
-        
         .modal-bg { background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); }
         
-        /* GLASSY MESSAGE BUBBLES */
+        /* CRYSTAL CLEAR GLASS BUBBLES */
         .glass-bubble {
-            background: rgba(0, 92, 75, 0.6);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
         .glass-bubble-received {
-            background: rgba(32, 44, 51, 0.6);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
+        .message-text {
+            color: var(--msg-color, #ffffff);
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+        }
         
-        .message-actions {
-            opacity: 0;
-            transition: opacity 0.2s;
-        }
-        .message-wrapper:hover .message-actions {
-            opacity: 1;
-        }
+        /* SNAPCHAT STYLE VIDEO FILTERS */
+        .filter-bw { filter: grayscale(100%); }
+        .filter-sepia { filter: sepia(100%); }
+        .filter-invert { filter: invert(100%); }
+        .filter-neon { filter: hue-rotate(180deg) saturate(200%); }
+
+        .message-actions { opacity: 0; transition: opacity 0.2s; }
+        .message-wrapper:hover .message-actions { opacity: 1; }
     </style>
 </head>
 <body class="h-screen w-screen overflow-hidden flex items-center justify-center">
@@ -120,7 +119,9 @@
                         <img id="chatAvatar" src="" class="w-10 h-10 rounded-full object-cover">
                         <h2 id="chatName" class="text-lg"></h2>
                     </div>
-                    <div class="flex gap-4 text-gray-400 text-lg">
+                    <div class="flex gap-4 text-gray-400 text-lg items-center">
+                        <!-- NEW: Custom Text Color Picker -->
+                        <input type="color" id="textColorPicker" value="#ffffff" onchange="changeTextColor(this.value)" class="w-6 h-6 rounded cursor-pointer bg-transparent border-none" title="Change Text Color">
                         <button onclick="startCall('video')" title="Video Call"><i class="fas fa-video hover:text-white"></i></button>
                         <button onclick="startCall('voice')" title="Voice Call"><i class="fas fa-phone hover:text-white"></i></button>
                     </div>
@@ -128,6 +129,14 @@
                 <div id="messagesArea" class="flex-1 overflow-y-auto p-4 flex flex-col gap-2"></div>
                 <div class="bg-wa_header px-4 py-3 flex items-center gap-3">
                     <input type="text" id="msgInput" placeholder="Message" class="flex-1 bg-wa_input px-4 py-2 rounded-lg focus:outline-none" onkeypress="if(event.key==='Enter') sendText()">
+                    
+                    <!-- NEW: Funny Voice Changer Dropdown -->
+                    <select id="voiceEffect" class="bg-wa_input text-xs text-gray-300 rounded px-2 py-2 focus:outline-none cursor-pointer">
+                        <option value="1">Normal</option>
+                        <option value="1.5">Chipmunk</option>
+                        <option value="0.75">Monster</option>
+                    </select>
+
                     <button id="micBtn" 
                             onmousedown="startRecording()" 
                             onmouseup="stopRecording()" 
@@ -159,17 +168,14 @@
     <div id="bgModal" class="hidden fixed inset-0 z-[100] modal-bg flex items-center justify-center p-4">
         <div class="bg-wa_header p-6 rounded-2xl w-full max-w-sm border border-wa_border">
             <h2 class="text-xl font-bold mb-4">Change Chat Background</h2>
-            
             <div class="mb-4">
                 <label class="block text-sm text-gray-400 mb-2">Upload from Files</label>
                 <input type="file" id="bgFileInput" accept="image/*" onchange="uploadBg(event)" class="w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-wa_green file:text-white hover:file:bg-[#008f6f]">
             </div>
-
             <div class="mb-4">
                 <label class="block text-sm text-gray-400 mb-2">Or Paste Image URL</label>
                 <input type="text" id="bgUrlInput" placeholder="https://..." class="w-full bg-wa_input px-4 py-2 rounded-lg focus:outline-none">
             </div>
-
             <div class="flex gap-3">
                 <button onclick="applyBgUrl()" class="flex-1 bg-wa_green py-2 rounded-lg font-bold">Apply URL</button>
                 <button onclick="closeBgModal()" class="flex-1 bg-gray-600 py-2 rounded-lg">Close</button>
@@ -199,6 +205,10 @@
                 <img id="activeCallAvatar" src="" class="w-10 h-10 rounded-full">
                 <div><h3 id="activeCallName" class="font-bold"></h3><p id="callStatus" class="text-sm text-gray-300">Connecting...</p></div>
             </div>
+            <!-- NEW: Snapchat Style Filter Button -->
+            <button onclick="cycleVideoFilter()" class="text-white text-xl hover:text-wa_green transition" title="Change Video Filter">
+                <i class="fas fa-wand-magic-sparkles"></i>
+            </button>
         </div>
         <div class="absolute bottom-10 left-0 w-full flex justify-center gap-8 z-20">
             <button onclick="toggleMute()" class="bg-gray-700 p-4 rounded-full text-xl"><i class="fas fa-microphone"></i></button>
@@ -213,7 +223,7 @@
         // ==========================================
         // CONFIGURATION
         // ==========================================
-        const SERVER_URL = "https://whatsappgggg.onrender.com/"; // PASTE YOUR RENDER URL HERE!
+        const SERVER_URL = "https://whatsappgggg.onrender.com/";
         const FAMILY_SECRET_PASSWORD = "hassan123";
         
         const socket = io(SERVER_URL);
@@ -227,10 +237,14 @@
         let audioChunks = [];
         let incomingSignal = null;
         let incomingCaller = null;
-        let callType = 'video'; // 'voice' or 'video'
+        let callType = 'video';
         let allUsers = [];
         let isRecording = false;
         let sentMessages = new Set();
+        
+        // NEW: Filter State
+        let currentFilterIndex = 0;
+        const videoFilters = ['', 'filter-bw', 'filter-sepia', 'filter-invert', 'filter-neon'];
 
         // ==========================================
         // 1. LOGIN & SAVING
@@ -242,6 +256,7 @@
                 showApp();
             }
             loadSavedBg();
+            loadSavedTextColor(); // NEW
         };
 
         function previewImage(e) {
@@ -317,7 +332,7 @@
         }
 
         // ==========================================
-        // 3. MESSAGING WITH DELETE
+        // 3. MESSAGING WITH DELETE & CUSTOM COLOR
         // ==========================================
         function openChat(username, avatar) {
             activeUser = { username, avatar };
@@ -340,7 +355,8 @@
                     to: activeUser.username, 
                     text, 
                     type: 'text', 
-                    time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) 
+                    time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+                    color: document.getElementById('textColorPicker').value // NEW
                 };
                 socket.emit('send_message', msg);
                 appendMessage(msg);
@@ -363,10 +379,13 @@
             const area = document.getElementById('messagesArea');
             const isMe = msg.from === myData.username;
             const bubbleClass = isMe ? 'glass-bubble self-end' : 'glass-bubble-received self-start';
+            const textColor = msg.color || '#ffffff'; // NEW
             
             let content = msg.text;
             if (msg.type === 'voice') {
-                content = `<audio controls src="${msg.text}" class="w-48"></audio>`;
+                // NEW: Apply voice effect to playback
+                const effect = document.getElementById('voiceEffect').value;
+                content = `<audio controls src="${msg.text}" class="w-48" style="playbackRate: ${effect}"></audio>`;
             }
             
             const wrapper = document.createElement('div');
@@ -374,7 +393,7 @@
             
             wrapper.innerHTML = `
                 <div class="${bubbleClass} text-white px-3 py-2 rounded-lg shadow text-sm relative group">
-                    ${content}
+                    <div class="message-text" style="color: ${textColor}">${content}</div>
                     <div class="flex justify-between items-center mt-1 gap-2">
                         <span class="text-[10px] text-gray-300">${msg.time}</span>
                         ${isMe ? `<button onclick="deleteMessage('${msg.id}', this)" class="message-actions text-[10px] text-red-400 hover:text-red-300"><i class="fas fa-trash"></i></button>` : ''}
@@ -389,12 +408,10 @@
         function deleteMessage(msgId, btnElement) {
             const messageDiv = btnElement.closest('.message-wrapper');
             messageDiv.remove();
-            // Optionally emit to server to delete for everyone
             socket.emit('delete_message', { id: msgId, from: myData.username });
         }
 
         socket.on('message_deleted', (data) => {
-            // Remove message from all users
             const messages = document.querySelectorAll('.message-wrapper');
             messages.forEach(msgEl => {
                 const deleteBtn = msgEl.querySelector(`[onclick*="'${data.id}'"]`);
@@ -409,24 +426,17 @@
         // ==========================================
         async function startRecording() {
             if (isRecording) return;
-            
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 mediaRecorder = new MediaRecorder(stream);
                 audioChunks = [];
-                
-                mediaRecorder.ondataavailable = e => {
-                    if (e.data.size > 0) audioChunks.push(e.data);
-                };
-                
+                mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
                 mediaRecorder.onstop = sendVoiceNote;
                 mediaRecorder.start();
                 isRecording = true;
-                
                 const btn = document.getElementById('micBtn');
                 btn.classList.add('text-red-500', 'animate-pulse');
                 btn.innerHTML = '<i class="fas fa-stop"></i>';
-                
             } catch (err) { 
                 alert("Microphone access denied!"); 
                 isRecording = false;
@@ -435,12 +445,10 @@
 
         function stopRecording() {
             if (!isRecording) return;
-            
             if (mediaRecorder && mediaRecorder.state !== 'inactive') {
                 mediaRecorder.stop();
                 mediaRecorder.stream.getTracks().forEach(track => track.stop());
             }
-            
             isRecording = false;
             const btn = document.getElementById('micBtn');
             btn.classList.remove('text-red-500', 'animate-pulse');
@@ -449,7 +457,6 @@
 
         function sendVoiceNote() {
             if (audioChunks.length === 0) return;
-            
             const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
             const reader = new FileReader();
             reader.readAsDataURL(audioBlob);
@@ -461,7 +468,8 @@
                     to: activeUser.username, 
                     text: reader.result, 
                     type: 'voice', 
-                    time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) 
+                    time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+                    color: document.getElementById('textColorPicker').value // NEW
                 };
                 socket.emit('send_message', msg);
                 audioChunks = [];
@@ -469,60 +477,36 @@
         }
 
         // ==========================================
-        // 5. SEPARATE VOICE & VIDEO CALLS (FIXED)
+        // 5. SEPARATE VOICE & VIDEO CALLS
         // ==========================================
         async function startCall(type) {
             if (!activeUser) return;
-            
-            callType = type; // 'voice' or 'video'
-            
+            callType = type;
             try {
-                // VOICE CALL: Audio only
-                // VIDEO CALL: Audio + Video
                 localStream = await navigator.mediaDevices.getUserMedia({ 
-                    video: type === 'video' ? { 
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 },
-                        facingMode: "user"
-                    } : false, 
-                    audio: true // Always have audio
+                    video: type === 'video' ? { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: "user" } : false, 
+                    audio: true 
                 });
-                
                 const localVideo = document.getElementById('localVideo');
                 localVideo.srcObject = localStream;
                 localVideo.style.display = type === 'video' ? 'block' : 'none';
-                
                 document.getElementById('activeCallUI').classList.remove('hidden');
                 document.getElementById('activeCallName').innerText = activeUser.username;
                 document.getElementById('activeCallAvatar').src = activeUser.avatar;
                 document.getElementById('callStatus').innerText = type === 'video' ? "Video calling..." : "Voice calling...";
                 
-                // Better WebRTC config
                 peer = new SimplePeer({ 
                     initiator: true, 
                     trickle: false, 
                     stream: localStream,
-                    config: {
-                        iceServers: [
-                            { urls: 'stun:stun.l.google.com:19302' },
-                            { urls: 'stun:stun1.l.google.com:19302' },
-                            { urls: 'stun:stun2.l.google.com:19302' }
-                        ]
-                    }
+                    config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }, { urls: 'stun:stun2.l.google.com:19302' }] }
                 });
 
                 peer.on('signal', data => {
-                    socket.emit('call_user', { 
-                        userToCall: activeUser.username, 
-                        signal: data, 
-                        from: myData.username, 
-                        name: myData.username,
-                        type: type
-                    });
+                    socket.emit('call_user', { userToCall: activeUser.username, signal: data, from: myData.username, name: myData.username, type: type });
                 });
 
                 peer.on('stream', remoteStream => {
-                    console.log('✅ Received remote stream');
                     const remoteVideo = document.getElementById('remoteVideo');
                     remoteVideo.srcObject = remoteStream;
                     remoteVideo.play().catch(e => console.error('Video play error:', e));
@@ -530,19 +514,8 @@
                     document.getElementById('ringtone').pause();
                 });
 
-                peer.on('error', err => {
-                    console.error('❌ Peer error:', err);
-                    document.getElementById('callStatus').innerText = "Connection error";
-                });
-
-                peer.on('connect', () => {
-                    console.log('✅ Peer connected');
-                });
-
                 document.getElementById('ringtone').play();
-                
             } catch (err) {
-                console.error(' GetUserMedia error:', err);
                 alert("Camera/Mic access denied or not available!");
             }
         }
@@ -551,7 +524,6 @@
             incomingSignal = data.signal;
             incomingCaller = { username: data.from, name: data.name };
             callType = data.type || 'video';
-            
             document.getElementById('incomingName').innerText = `${data.name} is calling...`;
             document.getElementById('incomingCallType').innerText = callType === 'video' ? 'Video Call' : 'Voice Call';
             document.getElementById('incomingCallUI').classList.remove('hidden');
@@ -566,14 +538,9 @@
                 document.getElementById('ringtone').pause();
 
                 localStream = await navigator.mediaDevices.getUserMedia({ 
-                    video: callType === 'video' ? { 
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 },
-                        facingMode: "user"
-                    } : false, 
+                    video: callType === 'video' ? { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: "user" } : false, 
                     audio: true 
                 });
-                
                 const localVideo = document.getElementById('localVideo');
                 localVideo.srcObject = localStream;
                 localVideo.style.display = callType === 'video' ? 'block' : 'none';
@@ -582,13 +549,7 @@
                     initiator: false, 
                     trickle: false, 
                     stream: localStream,
-                    config: {
-                        iceServers: [
-                            { urls: 'stun:stun.l.google.com:19302' },
-                            { urls: 'stun:stun1.l.google.com:19302' },
-                            { urls: 'stun:stun2.l.google.com:19302' }
-                        ]
-                    }
+                    config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }, { urls: 'stun:stun2.l.google.com:19302' }] }
                 });
 
                 peer.on('signal', data => {
@@ -596,21 +557,14 @@
                 });
 
                 peer.on('stream', remoteStream => {
-                    console.log('✅ Received remote stream');
                     const remoteVideo = document.getElementById('remoteVideo');
                     remoteVideo.srcObject = remoteStream;
                     remoteVideo.play().catch(e => console.error('Video play error:', e));
                     document.getElementById('callStatus').innerText = callType === 'video' ? "Video connected" : "Voice connected";
                 });
 
-                peer.on('error', err => {
-                    console.error('❌ Peer error:', err);
-                });
-
                 peer.signal(incomingSignal);
-                
             } catch (err) {
-                console.error(' Accept call error:', err);
                 alert("Camera/Mic access denied!");
             }
         }
@@ -621,9 +575,7 @@
         }
         
         socket.on('call_accepted', (data) => {
-            if (peer) {
-                peer.signal(data.signal);
-            }
+            if (peer) peer.signal(data.signal);
         });
 
         function endCall() {
@@ -631,32 +583,27 @@
             document.getElementById('incomingCallUI').classList.add('hidden');
             document.getElementById('ringtone').pause();
             
-            if (peer) {
-                peer.destroy();
-                peer = null;
-            }
-            
-            if (localStream) {
-                localStream.getTracks().forEach(track => track.stop());
-                localStream = null;
-            }
+            if (peer) { peer.destroy(); peer = null; }
+            if (localStream) { localStream.getTracks().forEach(track => track.stop()); localStream = null; }
             
             document.getElementById('remoteVideo').srcObject = null;
             document.getElementById('localVideo').srcObject = null;
+            
+            // NEW: Reset filters on end call
+            currentFilterIndex = 0;
+            const remoteVideo = document.getElementById('remoteVideo');
+            const localVideo = document.getElementById('localVideo');
+            videoFilters.forEach(f => { if(f) { remoteVideo.classList.remove(f); localVideo.classList.remove(f); }});
         }
 
         function toggleMute() { 
             isMuted = !isMuted; 
-            if (localStream) {
-                localStream.getAudioTracks()[0].enabled = !isMuted; 
-            }
+            if (localStream) localStream.getAudioTracks()[0].enabled = !isMuted; 
         }
         
         function toggleVideo() { 
             isVideoOff = !isVideoOff; 
-            if (localStream && callType === 'video') {
-                localStream.getVideoTracks()[0].enabled = !isVideoOff; 
-            }
+            if (localStream && callType === 'video') localStream.getVideoTracks()[0].enabled = !isVideoOff; 
         }
 
         // ==========================================
@@ -697,6 +644,36 @@
                 document.getElementById('bgImageLayer').style.backgroundImage = `url('${saved}')`;
             } else {
                 applyBackground('https://images.unsplash.com/photo-1462331940025-496dfbfc7564?q=80&w=2000&auto=format&fit=crop');
+            }
+        }
+
+        // ==========================================
+        // 7. NEW FEATURES: COLORS & FILTERS
+        // ==========================================
+        function changeTextColor(color) {
+            document.documentElement.style.setProperty('--msg-color', color);
+            localStorage.setItem('diaa_text_color', color);
+        }
+        
+        function loadSavedTextColor() {
+            const saved = localStorage.getItem('diaa_text_color');
+            if (saved) {
+                document.getElementById('textColorPicker').value = saved;
+                changeTextColor(saved);
+            }
+        }
+
+        function cycleVideoFilter() {
+            currentFilterIndex = (currentFilterIndex + 1) % videoFilters.length;
+            const filterClass = videoFilters[currentFilterIndex];
+            const remoteVideo = document.getElementById('remoteVideo');
+            const localVideo = document.getElementById('localVideo');
+            
+            videoFilters.forEach(f => { if(f) { remoteVideo.classList.remove(f); localVideo.classList.remove(f); }});
+            
+            if (filterClass) {
+                remoteVideo.classList.add(filterClass);
+                localVideo.classList.add(filterClass);
             }
         }
     </script>
