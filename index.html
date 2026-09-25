@@ -30,30 +30,30 @@
         
         video { width: 100%; height: 100%; object-fit: cover; background: #000; }
         
-        .chat-bg-overlay { position: absolute; inset: 0; background-color: rgba(11, 20, 26, 0.4); pointer-events: none; z-index: 0; }
+        /* CRYSTAL CLEAR - NO OVERLAY */
+        .chat-bg-overlay { display: none; } /* REMOVED THE DARK OVERLAY */
         .chat-bg-image { position: absolute; inset: 0; background-size: cover; background-position: center; z-index: -1; }
         
         @keyframes pulse-ring { 0% { transform: scale(0.8); opacity: 0.5; } 100% { transform: scale(2.5); opacity: 0; } }
         .pulse-ring { animation: pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite; }
         .modal-bg { background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); }
         
-        /* CRYSTAL CLEAR GLASS BUBBLES */
+        /* SUPER CLEAR GLASS BUBBLES */
         .glass-bubble {
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
         }
         .glass-bubble-received {
-            background: rgba(0, 0, 0, 0.3);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(0, 0, 0, 0.25);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
         .message-text {
             color: var(--msg-color, #ffffff);
-            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+            text-shadow: 0 1px 3px rgba(0,0,0,0.8);
         }
         
         /* SNAPCHAT STYLE VIDEO FILTERS */
@@ -64,6 +64,42 @@
 
         .message-actions { opacity: 0; transition: opacity 0.2s; }
         .message-wrapper:hover .message-actions { opacity: 1; }
+        
+        /* CAMERA UI */
+        .camera-overlay {
+            position: fixed; inset: 0; background: #000; z-index: 9999;
+            display: none; flex-direction: column;
+        }
+        .camera-overlay.active { display: flex; }
+        #cameraVideo { width: 100%; height: 100%; object-fit: cover; }
+        .camera-controls {
+            position: absolute; bottom: 40px; left: 0; right: 0;
+            display: flex; justify-content: center; gap: 40px; align-items: center;
+        }
+        .record-btn {
+            width: 70px; height: 70px; border-radius: 50%;
+            background: white; border: 4px solid rgba(255,255,255,0.5);
+            cursor: pointer; transition: all 0.3s;
+        }
+        .record-btn.recording {
+            background: #ef4444; border-color: #fff;
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+        .close-camera {
+            position: absolute; top: 20px; left: 20px;
+            background: rgba(0,0,0,0.5); color: white;
+            width: 44px; height: 44px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; font-size: 20px;
+        }
+        .switch-camera {
+            position: absolute; top: 20px; right: 20px;
+            background: rgba(0,0,0,0.5); color: white;
+            width: 44px; height: 44px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; font-size: 20px;
+        }
     </style>
 </head>
 <body class="h-screen w-screen overflow-hidden flex items-center justify-center">
@@ -90,7 +126,7 @@
     <div id="mainApp" class="hidden w-full h-full max-w-[1600px] mx-auto bg-wa_bg shadow-2xl md:flex overflow-hidden">
         <div class="w-full md:w-[350px] flex flex-col border-r border-wa_border bg-wa_bg relative z-10">
             <div class="bg-wa_header px-4 py-3 flex justify-between items-center">
-                <img id="myAvatar" src="" class="w-10 h-10 rounded-full object-cover">
+                <img id="myAvatar" src="" class="w-10 h-10 rounded-full object-cover cursor-pointer" onclick="openProfileEdit()" title="Edit Profile">
                 <div class="flex gap-4 text-gray-400">
                     <button onclick="openAddModal()" class="hover:text-white"><i class="fas fa-user-plus"></i></button>
                     <button onclick="openBgModal()" class="hover:text-white"><i class="fas fa-palette"></i></button>
@@ -106,7 +142,7 @@
 
         <div class="flex-1 flex flex-col relative bg-wa_chat_bg" id="chatArea">
             <div id="bgImageLayer" class="chat-bg-image"></div>
-            <div class="chat-bg-overlay"></div>
+            <!-- OVERLAY REMOVED FOR CRYSTAL CLEAR VIEW -->
 
             <div id="emptyState" class="flex-1 flex flex-col items-center justify-center text-center p-8 relative z-10">
                 <h1 class="text-3xl font-light mb-4">whatsappDIaa Web</h1>
@@ -120,7 +156,6 @@
                         <h2 id="chatName" class="text-lg"></h2>
                     </div>
                     <div class="flex gap-4 text-gray-400 text-lg items-center">
-                        <!-- NEW: Custom Text Color Picker -->
                         <input type="color" id="textColorPicker" value="#ffffff" onchange="changeTextColor(this.value)" class="w-6 h-6 rounded cursor-pointer bg-transparent border-none" title="Change Text Color">
                         <button onclick="startCall('video')" title="Video Call"><i class="fas fa-video hover:text-white"></i></button>
                         <button onclick="startCall('voice')" title="Voice Call"><i class="fas fa-phone hover:text-white"></i></button>
@@ -130,19 +165,18 @@
                 <div class="bg-wa_header px-4 py-3 flex items-center gap-3">
                     <input type="text" id="msgInput" placeholder="Message" class="flex-1 bg-wa_input px-4 py-2 rounded-lg focus:outline-none" onkeypress="if(event.key==='Enter') sendText()">
                     
-                    <!-- NEW: Funny Voice Changer Dropdown -->
                     <select id="voiceEffect" class="bg-wa_input text-xs text-gray-300 rounded px-2 py-2 focus:outline-none cursor-pointer">
                         <option value="1">Normal</option>
                         <option value="1.5">Chipmunk</option>
                         <option value="0.75">Monster</option>
                     </select>
 
-                    <button id="micBtn" 
-                            onmousedown="startRecording()" 
-                            onmouseup="stopRecording()" 
-                            ontouchstart="startRecording()" 
-                            ontouchend="stopRecording()"
-                            class="text-wa_green text-2xl p-2 cursor-pointer select-none">
+                    <!-- NEW: CAMERA BUTTON -->
+                    <button onclick="openCamera()" class="text-wa_green text-2xl p-2 cursor-pointer hover:scale-110 transition" title="Take Photo/Video">
+                        <i class="fas fa-camera"></i>
+                    </button>
+
+                    <button id="micBtn" onmousedown="startRecording()" onmouseup="stopRecording()" ontouchstart="startRecording()" ontouchend="stopRecording()" class="text-wa_green text-2xl p-2 cursor-pointer select-none">
                         <i class="fas fa-microphone"></i>
                     </button>
                     <button onclick="sendText()" class="text-wa_green text-2xl p-2"><i class="fas fa-paper-plane"></i></button>
@@ -169,8 +203,8 @@
         <div class="bg-wa_header p-6 rounded-2xl w-full max-w-sm border border-wa_border">
             <h2 class="text-xl font-bold mb-4">Change Chat Background</h2>
             <div class="mb-4">
-                <label class="block text-sm text-gray-400 mb-2">Upload from Files</label>
-                <input type="file" id="bgFileInput" accept="image/*" onchange="uploadBg(event)" class="w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-wa_green file:text-white hover:file:bg-[#008f6f]">
+                <label class="block text-sm text-gray-400 mb-2">Upload from Files (Image/Video/GIF)</label>
+                <input type="file" id="bgFileInput" accept="image/*,video/*,.gif" onchange="uploadBg(event)" class="w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-wa_green file:text-white hover:file:bg-[#008f6f]">
             </div>
             <div class="mb-4">
                 <label class="block text-sm text-gray-400 mb-2">Or Paste Image URL</label>
@@ -183,7 +217,36 @@
         </div>
     </div>
 
-    <!-- 5. CALLING UIs -->
+    <!-- 5. PROFILE EDIT MODAL -->
+    <div id="profileModal" class="hidden fixed inset-0 z-[100] modal-bg flex items-center justify-center p-4">
+        <div class="bg-wa_header p-6 rounded-2xl w-full max-w-sm border border-wa_border">
+            <h2 class="text-xl font-bold mb-4">Edit Profile</h2>
+            <div class="flex justify-center mb-4">
+                <label class="relative cursor-pointer">
+                    <img id="profileAvatarPreview" src="" class="w-24 h-24 rounded-full object-cover border-2 border-wa_green">
+                    <input type="file" id="profileAvatarInput" class="hidden" accept="image/*" onchange="updateProfileAvatar(event)">
+                    <i class="fas fa-camera absolute bottom-0 right-0 bg-wa_green p-2 rounded-full text-sm"></i>
+                </label>
+            </div>
+            <input type="text" id="profileNameInput" placeholder="Your Name" class="w-full bg-wa_input px-4 py-3 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-wa_green">
+            <div class="flex gap-3">
+                <button onclick="closeProfileEdit()" class="flex-1 bg-gray-600 py-2 rounded-lg">Cancel</button>
+                <button onclick="saveProfile()" class="flex-1 bg-wa_green py-2 rounded-lg font-bold">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6. CAMERA OVERLAY -->
+    <div id="cameraOverlay" class="camera-overlay">
+        <div class="close-camera" onclick="closeCamera()"><i class="fas fa-times"></i></div>
+        <div class="switch-camera" onclick="switchCamera()"><i class="fas fa-sync-alt"></i></div>
+        <video id="cameraVideo" autoplay playsinline></video>
+        <div class="camera-controls">
+            <div class="record-btn" id="cameraRecordBtn" onmousedown="startCameraRecording()" onmouseup="stopCameraRecording()" ontouchstart="startCameraRecording()" ontouchend="stopCameraRecording()"></div>
+        </div>
+    </div>
+
+    <!-- 7. CALLING UIs -->
     <div id="incomingCallUI" class="hidden fixed inset-0 z-[100] bg-[#0b141a] flex flex-col items-center justify-center text-white">
         <div class="relative mb-8">
             <div class="absolute inset-0 bg-wa_green rounded-full pulse-ring"></div>
@@ -205,10 +268,7 @@
                 <img id="activeCallAvatar" src="" class="w-10 h-10 rounded-full">
                 <div><h3 id="activeCallName" class="font-bold"></h3><p id="callStatus" class="text-sm text-gray-300">Connecting...</p></div>
             </div>
-            <!-- NEW: Snapchat Style Filter Button -->
-            <button onclick="cycleVideoFilter()" class="text-white text-xl hover:text-wa_green transition" title="Change Video Filter">
-                <i class="fas fa-wand-magic-sparkles"></i>
-            </button>
+            <button onclick="cycleVideoFilter()" class="text-white text-xl hover:text-wa_green transition" title="Change Video Filter"><i class="fas fa-wand-magic-sparkles"></i></button>
         </div>
         <div class="absolute bottom-10 left-0 w-full flex justify-center gap-8 z-20">
             <button onclick="toggleMute()" class="bg-gray-700 p-4 rounded-full text-xl"><i class="fas fa-microphone"></i></button>
@@ -241,10 +301,14 @@
         let allUsers = [];
         let isRecording = false;
         let sentMessages = new Set();
-        
-        // NEW: Filter State
         let currentFilterIndex = 0;
         const videoFilters = ['', 'filter-bw', 'filter-sepia', 'filter-invert', 'filter-neon'];
+        
+        // Camera variables
+        let cameraStream = null;
+        let cameraRecorder = null;
+        let cameraChunks = [];
+        let facingMode = 'user';
 
         // ==========================================
         // 1. LOGIN & SAVING
@@ -256,7 +320,7 @@
                 showApp();
             }
             loadSavedBg();
-            loadSavedTextColor(); // NEW
+            loadSavedTextColor();
         };
 
         function previewImage(e) {
@@ -291,7 +355,43 @@
         }
 
         // ==========================================
-        // 2. REAL-TIME USERS & SEARCH
+        // 2. PROFILE EDITING
+        // ==========================================
+        function openProfileEdit() {
+            document.getElementById('profileNameInput').value = myData.username;
+            document.getElementById('profileAvatarPreview').src = myData.avatar;
+            document.getElementById('profileModal').classList.remove('hidden');
+        }
+
+        function closeProfileEdit() {
+            document.getElementById('profileModal').classList.add('hidden');
+        }
+
+        function updateProfileAvatar(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (ev) => document.getElementById('profileAvatarPreview').src = ev.target.result;
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function saveProfile() {
+            const newName = document.getElementById('profileNameInput').value.trim();
+            const newAvatar = document.getElementById('profileAvatarPreview').src;
+            
+            if (newName && newAvatar) {
+                myData.username = newName;
+                myData.avatar = newAvatar;
+                localStorage.setItem('diaa_user', JSON.stringify(myData));
+                document.getElementById('myAvatar').src = newAvatar;
+                socket.emit('register_user', myData); // Update on server
+                closeProfileEdit();
+            }
+        }
+
+        // ==========================================
+        // 3. REAL-TIME USERS & SEARCH
         // ==========================================
         socket.on('update_user_list', (users) => {
             allUsers = users.filter(u => u.username !== myData.username);
@@ -302,7 +402,7 @@
             const list = document.getElementById('userList');
             list.innerHTML = '';
             if(usersToRender.length === 0) {
-                list.innerHTML = '<p class="text-center text-gray-500 mt-4 text-sm">No users found. Ask them to log in!</p>';
+                list.innerHTML = '<p class="text-center text-gray-500 mt-4 text-sm">No users found.</p>';
                 return;
             }
             usersToRender.forEach(u => {
@@ -316,8 +416,7 @@
 
         function filterUsers() {
             const query = document.getElementById('searchUser').value.toLowerCase();
-            const filtered = allUsers.filter(u => u.username.toLowerCase().includes(query));
-            renderUserList(filtered);
+            renderUserList(allUsers.filter(u => u.username.toLowerCase().includes(query)));
         }
 
         function openAddModal() { document.getElementById('addModal').classList.remove('hidden'); }
@@ -332,7 +431,7 @@
         }
 
         // ==========================================
-        // 3. MESSAGING WITH DELETE & CUSTOM COLOR
+        // 4. MESSAGING
         // ==========================================
         function openChat(username, avatar) {
             activeUser = { username, avatar };
@@ -350,13 +449,9 @@
             if (text && activeUser) {
                 const msgId = Date.now().toString() + Math.random().toString();
                 const msg = { 
-                    id: msgId,
-                    from: myData.username, 
-                    to: activeUser.username, 
-                    text, 
-                    type: 'text', 
-                    time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
-                    color: document.getElementById('textColorPicker').value // NEW
+                    id: msgId, from: myData.username, to: activeUser.username, 
+                    text, type: 'text', time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+                    color: document.getElementById('textColorPicker').value
                 };
                 socket.emit('send_message', msg);
                 appendMessage(msg);
@@ -366,8 +461,7 @@
 
         socket.on('receive_message', (msg) => {
             if ((msg.to === myData.username || msg.from === myData.username) && 
-                activeUser && 
-                (msg.from === activeUser.username || msg.to === activeUser.username)) {
+                activeUser && (msg.from === activeUser.username || msg.to === activeUser.username)) {
                 if (!sentMessages.has(msg.id)) {
                     appendMessage(msg);
                     sentMessages.add(msg.id);
@@ -379,18 +473,20 @@
             const area = document.getElementById('messagesArea');
             const isMe = msg.from === myData.username;
             const bubbleClass = isMe ? 'glass-bubble self-end' : 'glass-bubble-received self-start';
-            const textColor = msg.color || '#ffffff'; // NEW
+            const textColor = msg.color || '#ffffff';
             
             let content = msg.text;
             if (msg.type === 'voice') {
-                // NEW: Apply voice effect to playback
                 const effect = document.getElementById('voiceEffect').value;
                 content = `<audio controls src="${msg.text}" class="w-48" style="playbackRate: ${effect}"></audio>`;
+            } else if (msg.type === 'photo') {
+                content = `<img src="${msg.text}" class="max-w-full rounded-lg cursor-pointer" onclick="window.open(this.src)">`;
+            } else if (msg.type === 'video') {
+                content = `<video controls src="${msg.text}" class="max-w-full rounded-lg"></video>`;
             }
             
             const wrapper = document.createElement('div');
             wrapper.className = 'message-wrapper flex flex-col max-w-[70%] ' + (isMe ? 'self-end' : 'self-start');
-            
             wrapper.innerHTML = `
                 <div class="${bubbleClass} text-white px-3 py-2 rounded-lg shadow text-sm relative group">
                     <div class="message-text" style="color: ${textColor}">${content}</div>
@@ -400,29 +496,23 @@
                     </div>
                 </div>
             `;
-            
             area.appendChild(wrapper);
             area.scrollTop = area.scrollHeight;
         }
 
         function deleteMessage(msgId, btnElement) {
-            const messageDiv = btnElement.closest('.message-wrapper');
-            messageDiv.remove();
+            btnElement.closest('.message-wrapper').remove();
             socket.emit('delete_message', { id: msgId, from: myData.username });
         }
 
         socket.on('message_deleted', (data) => {
-            const messages = document.querySelectorAll('.message-wrapper');
-            messages.forEach(msgEl => {
-                const deleteBtn = msgEl.querySelector(`[onclick*="'${data.id}'"]`);
-                if (deleteBtn) {
-                    msgEl.remove();
-                }
+            document.querySelectorAll('.message-wrapper').forEach(msgEl => {
+                if (msgEl.innerHTML.includes(`'${data.id}'`)) msgEl.remove();
             });
         });
 
         // ==========================================
-        // 4. VOICE NOTES (HOLD TO RECORD)
+        // 5. VOICE NOTES
         // ==========================================
         async function startRecording() {
             if (isRecording) return;
@@ -437,10 +527,7 @@
                 const btn = document.getElementById('micBtn');
                 btn.classList.add('text-red-500', 'animate-pulse');
                 btn.innerHTML = '<i class="fas fa-stop"></i>';
-            } catch (err) { 
-                alert("Microphone access denied!"); 
-                isRecording = false;
-            }
+            } catch (err) { alert("Microphone access denied!"); isRecording = false; }
         }
 
         function stopRecording() {
@@ -463,13 +550,10 @@
             reader.onloadend = () => {
                 const msgId = Date.now().toString() + Math.random().toString();
                 const msg = { 
-                    id: msgId,
-                    from: myData.username, 
-                    to: activeUser.username, 
-                    text: reader.result, 
-                    type: 'voice', 
+                    id: msgId, from: myData.username, to: activeUser.username, 
+                    text: reader.result, type: 'voice', 
                     time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
-                    color: document.getElementById('textColorPicker').value // NEW
+                    color: document.getElementById('textColorPicker').value
                 };
                 socket.emit('send_message', msg);
                 audioChunks = [];
@@ -477,7 +561,76 @@
         }
 
         // ==========================================
-        // 5. SEPARATE VOICE & VIDEO CALLS
+        // 6. CAMERA (PHOTO/VIDEO)
+        // ==========================================
+        async function openCamera() {
+            try {
+                cameraStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: facingMode }, 
+                    audio: true 
+                });
+                document.getElementById('cameraVideo').srcObject = cameraStream;
+                document.getElementById('cameraOverlay').classList.add('active');
+            } catch (err) {
+                alert("Camera access denied!");
+            }
+        }
+
+        function closeCamera() {
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+                cameraStream = null;
+            }
+            document.getElementById('cameraOverlay').classList.remove('active');
+            document.getElementById('cameraRecordBtn').classList.remove('recording');
+        }
+
+        function switchCamera() {
+            facingMode = facingMode === 'user' ? 'environment' : 'user';
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+                openCamera();
+            }
+        }
+
+        function startCameraRecording() {
+            cameraChunks = [];
+            const mediaRecorder = new MediaRecorder(cameraStream, { mimeType: 'video/webm' });
+            mediaRecorder.ondataavailable = e => { if (e.data.size > 0) cameraChunks.push(e.data); };
+            mediaRecorder.onstop = sendCameraMedia;
+            mediaRecorder.start();
+            cameraRecorder = mediaRecorder;
+            document.getElementById('cameraRecordBtn').classList.add('recording');
+        }
+
+        function stopCameraRecording() {
+            if (cameraRecorder && cameraRecorder.state !== 'inactive') {
+                cameraRecorder.stop();
+                document.getElementById('cameraRecordBtn').classList.remove('recording');
+            }
+        }
+
+        function sendCameraMedia() {
+            if (cameraChunks.length === 0) return;
+            
+            const blob = new Blob(cameraChunks, { type: 'video/webm' });
+            const reader = new FileReader();
+            reader.readAsDataURL(blob);
+            reader.onloadend = () => {
+                const msgId = Date.now().toString() + Math.random().toString();
+                const msg = { 
+                    id: msgId, from: myData.username, to: activeUser.username, 
+                    text: reader.result, type: 'video', 
+                    time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+                    color: document.getElementById('textColorPicker').value
+                };
+                socket.emit('send_message', msg);
+                closeCamera();
+            };
+        }
+
+        // ==========================================
+        // 7. VIDEO/VOICE CALLS
         // ==========================================
         async function startCall(type) {
             if (!activeUser) return;
@@ -496,10 +649,8 @@
                 document.getElementById('callStatus').innerText = type === 'video' ? "Video calling..." : "Voice calling...";
                 
                 peer = new SimplePeer({ 
-                    initiator: true, 
-                    trickle: false, 
-                    stream: localStream,
-                    config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }, { urls: 'stun:stun2.l.google.com:19302' }] }
+                    initiator: true, trickle: false, stream: localStream,
+                    config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }] }
                 });
 
                 peer.on('signal', data => {
@@ -516,7 +667,7 @@
 
                 document.getElementById('ringtone').play();
             } catch (err) {
-                alert("Camera/Mic access denied or not available!");
+                alert("Camera/Mic access denied!");
             }
         }
 
@@ -546,10 +697,8 @@
                 localVideo.style.display = callType === 'video' ? 'block' : 'none';
 
                 peer = new SimplePeer({ 
-                    initiator: false, 
-                    trickle: false, 
-                    stream: localStream,
-                    config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }, { urls: 'stun:stun2.l.google.com:19302' }] }
+                    initiator: false, trickle: false, stream: localStream,
+                    config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }] }
                 });
 
                 peer.on('signal', data => {
@@ -582,14 +731,10 @@
             document.getElementById('activeCallUI').classList.add('hidden');
             document.getElementById('incomingCallUI').classList.add('hidden');
             document.getElementById('ringtone').pause();
-            
             if (peer) { peer.destroy(); peer = null; }
             if (localStream) { localStream.getTracks().forEach(track => track.stop()); localStream = null; }
-            
             document.getElementById('remoteVideo').srcObject = null;
             document.getElementById('localVideo').srcObject = null;
-            
-            // NEW: Reset filters on end call
             currentFilterIndex = 0;
             const remoteVideo = document.getElementById('remoteVideo');
             const localVideo = document.getElementById('localVideo');
@@ -607,7 +752,7 @@
         }
 
         // ==========================================
-        // 6. BEAUTIFUL BACKGROUNDS
+        // 8. BACKGROUNDS & COLORS
         // ==========================================
         function openBgModal() { document.getElementById('bgModal').classList.remove('hidden'); }
         function closeBgModal() { document.getElementById('bgModal').classList.add('hidden'); }
@@ -647,9 +792,6 @@
             }
         }
 
-        // ==========================================
-        // 7. NEW FEATURES: COLORS & FILTERS
-        // ==========================================
         function changeTextColor(color) {
             document.documentElement.style.setProperty('--msg-color', color);
             localStorage.setItem('diaa_text_color', color);
@@ -668,9 +810,7 @@
             const filterClass = videoFilters[currentFilterIndex];
             const remoteVideo = document.getElementById('remoteVideo');
             const localVideo = document.getElementById('localVideo');
-            
             videoFilters.forEach(f => { if(f) { remoteVideo.classList.remove(f); localVideo.classList.remove(f); }});
-            
             if (filterClass) {
                 remoteVideo.classList.add(filterClass);
                 localVideo.classList.add(filterClass);
