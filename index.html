@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>whatsappDIaa</title>
+    
+    <!-- PWA / Shortcut Meta Tags (Makes it installable on iPhone/Android) -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#111b21">
+    <link rel="apple-touch-icon" href="https://img.icons8.com/color/96/whatsapp--v1.png">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Socket.io Client -->
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        wa_bg: '#111b21', wa_header: '#202c33', wa_input: '#2a3942',
+                        wa_green: '#00a884', wa_bubble_out: '#005c4b', wa_bubble_in: '#202c33', wa_border: '#222d34'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #0b141a; color: #e9edef; font-family: sans-serif; }
+        .chat-doodle { background-color: #0b141a; background-image: url("https://user-images.githubusercontent.com/15075759/28719136-86dc0f70-73b1-11e7-911d-60d70fcd1252.png"); background-blend-mode: overlay; }
+        ::-webkit-scrollbar { width: 5px; } ::-webkit-scrollbar-thumb { background: #374151; }
+        video { width: 100%; height: 100%; object-fit: cover; background: #000; }
+        .pulse-ring { animation: pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite; }
+        @keyframes pulse-ring { 0% { transform: scale(0.8); opacity: 0.5; } 100% { transform: scale(2.5); opacity: 0; } }
+    </style>
+</head>
+<body class="h-screen w-screen overflow-hidden flex items-center justify-center">
+
+    <!-- 1. LOGIN SCREEN (Saves to LocalStorage) -->
+    <div id="loginScreen" class="fixed inset-0 z-50 bg-wa_bg flex items-center justify-center p-4">
+        <div class="bg-wa_header p-6 rounded-2xl shadow-2xl w-full max-w-sm border border-wa_border">
+            <h1 class="text-2xl font-bold text-wa_green mb-4 text-center">whatsappDIaa</h1>
+            <div class="flex justify-center mb-4">
+                <label class="relative cursor-pointer">
+                    <img id="avatarPreview" src="https://via.placeholder.com/100" class="w-20 h-20 rounded-full object-cover border-2 border-wa_green">
+                    <input type="file" id="avatarInput" class="hidden" accept="image/*" onchange="previewImage(event)">
+                    <i class="fas fa-camera absolute bottom-0 right-0 bg-wa_green p-1.5 rounded-full text-xs"></i>
+                </label>
+            </div>
+            <input type="text" id="usernameInput" placeholder="Username" class="w-full bg-wa_input px-4 py-3 rounded-lg mb-3 focus:outline-none focus:ring-2 focus:ring-wa_green">
+            <input type="password" id="passwordInput" placeholder="Password" class="w-full bg-wa_input px-4 py-3 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-wa_green">
+            <button onclick="login()" class="w-full bg-wa_green text-white font-bold py-3 rounded-lg">Enter</button>
+        </div>
+    </div>
+
+    <!-- 2. MAIN APP -->
+    <div id="mainApp" class="hidden w-full h-full max-w-[1600px] mx-auto bg-wa_bg shadow-2xl md:flex overflow-hidden">
+        <!-- Sidebar -->
+        <div class="w-full md:w-[350px] flex flex-col border-r border-wa_border bg-wa_bg">
+            <div class="bg-wa_header px-4 py-3 flex justify-between items-center">
+                <img id="myAvatar" src="" class="w-10 h-10 rounded-full object-cover">
+                <button onclick="changeBackground()" class="text-gray-400 hover:text-white"><i class="fas fa-palette"></i></button>
+            </div>
+            <div id="userList" class="flex-1 overflow-y-auto p-2">
+                <!-- Real users will appear here -->
+            </div>
+        </div>
+
+        <!-- Chat/Call Area -->
+        <div class="flex-1 flex flex-col relative bg-wa_chat_bg" id="chatArea">
+            <div id="emptyState" class="flex-1 flex flex-col items-center justify-center text-center p-8">
+                <h1 class="text-3xl font-light mb-4">whatsappDIaa Web</h1>
+                <p class="text-gray-400">Select a contact to start real messaging, voice notes, or video calls.</p>
+            </div>
+
+            <div id="activeChatUI" class="hidden flex-1 flex flex-col h-full">
+                <div class="bg-wa_header px-4 py-2.5 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <img id="chatAvatar" src="" class="w-10 h-10 rounded-full object-cover">
+                        <h2 id="chatName" class="text-lg"></h2>
+                    </div>
+                    <div class="flex gap-4 text-gray-400 text-lg">
+                        <button onclick="startCall('video')"><i class="fas fa-video hover:text-white"></i></button>
+                        <button onclick="startCall('voice')"><i class="fas fa-phone hover:text-white"></i></button>
+                    </div>
+                </div>
+
+                <div id="messagesArea" class="flex-1 overflow-y-auto p-4 chat-doodle flex flex-col gap-2"></div>
+
+                <div class="bg-wa_header px-4 py-3 flex items-center gap-3">
+                    <input type="text" id="msgInput" placeholder="Message" class="flex-1 bg-wa_input px-4 py-2 rounded-lg focus:outline-none" onkeypress="if(event.key==='Enter') sendText()">
+                    <button id="micBtn" onmousedown="startRecording()" onmouseup="stopRecording()" ontouchstart="startRecording()" ontouchend="stopRecording()" class="text-wa_green text-2xl p-2"><i class="fas fa-microphone"></i></button>
+                    <button onclick="sendText()" class="text-wa_green text-2xl p-2"><i class="fas fa-paper-plane"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. REAL VIDEO/VOICE CALL UI -->
+    <div id="callUI" class="hidden fixed inset-0 z-[100] bg-black flex flex-col">
+        <video id="remoteVideo" autoplay playsinline class="absolute inset-0 w-full h-full"></video>
+        <video id="localVideo" autoplay playsinline muted class="absolute bottom-4 right-4 w-32 h-48 rounded-lg border-2 border-white z-10"></video>
+        
+        <div class="absolute top-0 left-0 w-full p-4 bg-gradient-to-b from-black/80 to-transparent z-20 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <img id="callAvatar" src="" class="w-10 h-10 rounded-full">
+                <div>
+                    <h3 id="callName" class="font-bold"></h3>
+                    <p id="callStatus" class="text-sm text-gray-300">Calling...</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="absolute bottom-10 left-0 w-full flex justify-center gap-8 z-20">
+            <button onclick="toggleMute()" class="bg-gray-700 p-4 rounded-full text-xl"><i class="fas fa-microphone"></i></button>
+            <button onclick="endCall()" class="bg-red-500 p-4 rounded-full text-xl"><i class="fas fa-phone-slash"></i></button>
+            <button onclick="toggleVideo()" class="bg-gray-700 p-4 rounded-full text-xl"><i class="fas fa-video"></i></button>
+        </div>
+    </div>
+
+    <audio id="ringtone" src="https://www.myinstants.com/media/sounds/iphone-ringtone.mp3" loop></audio>
+
+    <script>
+        // ==========================================
+        // CONFIGURATION
+        // ==========================================
+        const SERVER_URL = "YOUR_RENDER_URL_HERE"; // PASTE YOUR RENDER URL HERE!
+        const socket = io(SERVER_URL);
+        
+        let myData = null;
+        let activeUser = null;
+        let peerConnection = null;
+        let localStream = null;
+        let isMuted = false;
+        let isVideoOff = false;
+        let mediaRecorder = null;
+        let audioChunks = [];
+
+        const servers = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+
+        // ==========================================
+        // 1. LOGIN & SAVING
+        // ==========================================
+        window.onload = () => {
+            const saved = localStorage.getItem('diaa_user');
+            if (saved) {
+                myData = JSON.parse(saved);
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('mainApp').classList.remove('hidden');
+                document.getElementById('mainApp').classList.add('flex');
+                document.getElementById('myAvatar').src = myData.avatar;
+                socket.emit('register_user', myData);
+            }
+        };
+
+        function previewImage(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (ev) => document.getElementById('avatarPreview').src = ev.target.result;
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function login() {
+            const username = document.getElementById('usernameInput').value.trim();
+            const password = document.getElementById('passwordInput').value.trim();
+            const avatar = document.getElementById('avatarPreview').src;
+            
+            if (username && password && !avatar.includes('placeholder')) {
+                myData = { username, password, avatar };
+                localStorage.setItem('diaa_user', JSON.stringify(myData)); // SAVES LOGIN FOREVER
+                socket.emit('register_user', myData);
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('mainApp').classList.remove('hidden');
+                document.getElementById('mainApp').classList.add('flex');
+                document.getElementById('myAvatar').src = avatar;
+            } else {
+                alert("Fill all fields and pick a photo!");
+            }
+        }
+
+        // ==========================================
+        // 2. REAL-TIME USERS & MESSAGING
+        // ==========================================
+        socket.on('update_user_list', (users) => {
+            const list = document.getElementById('userList');
+            list.innerHTML = '';
+            users.forEach(u => {
+                if (u.username !== myData.username) {
+                    list.innerHTML += `
+                        <div onclick="openChat('${u.username}', '${u.avatar}')" class="flex items-center p-3 hover:bg-wa_header cursor-pointer border-b border-wa_border">
+                            <img src="${u.avatar}" class="w-12 h-12 rounded-full mr-3">
+                            <div><h3 class="font-bold">${u.username}</h3><p class="text-xs text-gray-400">Tap to chat</p></div>
+                        </div>`;
+                }
+            });
+        });
+
+        socket.on('receive_message', (msg) => {
+            if (msg.to === myData.username || msg.from === myData.username) {
+                if (activeUser && (msg.from === activeUser.username || msg.to === activeUser.username)) {
+                    appendMessage(msg);
+                }
+            }
+        });
+
+        function openChat(username, avatar) {
+            activeUser = { username, avatar };
+            document.getElementById('emptyState').classList.add('hidden');
+            document.getElementById('activeChatUI').classList.remove('hidden');
+            document.getElementById('chatName').innerText = username;
+            document.getElementById('chatAvatar').src = avatar;
+            document.getElementById('messagesArea').innerHTML = ''; // Clear for demo
+        }
+
+        function sendText() {
+            const input = document.getElementById('msgInput');
+            const text = input.value.trim();
+            if (text && activeUser) {
+                const msg = { from: myData.username, to: activeUser.username, text, type: 'text', time: new Date().toLocaleTimeString() };
+                socket.emit('send_message', msg);
+                appendMessage(msg);
+                input.value = '';
+            }
+        }
+
+        function appendMessage(msg) {
+            const area = document.getElementById('messagesArea');
+            const isMe = msg.from === myData.username;
+            const bg = isMe ? 'bg-wa_bubble_out self-end' : 'bg-wa_bubble_in self-start';
+            
+            let content = msg.text;
+            if (msg.type === 'voice') {
+                content = `<audio controls src="${msg.text}" class="w-48"></audio>`;
+            }
+
+            area.innerHTML += `
+                <div class="${bg} text-white px-3 py-2 rounded-lg max-w-[70%] shadow text-sm">
+                    ${content}
+                    <span class="text-[10px] text-gray-400 block text-right mt-1">${msg.time}</span>
+                </div>`;
+            area.scrollTop = area.scrollHeight;
+        }
+
+        // ==========================================
+        // 3. REAL VOICE NOTES
+        // ==========================================
+        async function startRecording() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+                mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+                mediaRecorder.onstop = sendVoiceNote;
+                mediaRecorder.start();
+                document.getElementById('micBtn').classList.add('text-red-500', 'animate-pulse');
+            } catch (err) { alert("Microphone access denied!"); }
+        }
+
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+                document.getElementById('micBtn').classList.remove('text-red-500', 'animate-pulse');
+            }
+        }
+
+        function sendVoiceNote() {
+            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+            const reader = new FileReader();
+            reader.readAsDataURL(audioBlob);
+            reader.onloadend = () => {
+                const base64Audio = reader.result;
+                const msg = { from: myData.username, to: activeUser.username, text: base64Audio, type: 'voice', time: new Date().toLocaleTimeString() };
+                socket.emit('send_message', msg);
+                appendMessage(msg);
+            };
+        }
+
+        // ==========================================
+        // 4. REAL VIDEO/VOICE CALLS (WebRTC)
+        // ==========================================
+        async function startCall(type) {
+            if (!activeUser) return;
+            document.getElementById('callUI').classList.remove('hidden');
+            document.getElementById('callName').innerText = activeUser.username;
+            document.getElementById('callAvatar').src = activeUser.avatar;
+            document.getElementById('localVideo').style.display = type === 'video' ? 'block' : 'none';
+
+            localStream = await navigator.mediaDevices.getUserMedia({ video: type === 'video', audio: true });
+            document.getElementById('localVideo').srcObject = localStream;
+
+            peerConnection = new RTCPeerConnection(servers);
+            localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+
+            peerConnection.onicecandidate = e => {
+                if (e.candidate) socket.emit('call_user', { userToCall: activeUser.username, signalData: e.candidate, from: myData.username, name: myData.username });
+            };
+
+            peerConnection.ontrack = e => { document.getElementById('remoteVideo').srcObject = e.streams[0]; };
+
+            const offer = await peerConnection.createOffer();
+            await peerConnection.setLocalDescription(offer);
+            
+            socket.emit('call_user', { userToCall: activeUser.username, signalData: offer, from: myData.username, name: myData.username });
+            document.getElementById('ringtone').play();
+        }
+
+        socket.on('call_incoming', async (data) => {
+            if (confirm(`${data.name} is calling. Answer?`)) {
+                document.getElementById('callUI').classList.remove('hidden');
+                document.getElementById('callName').innerText = data.name;
+                document.getElementById('ringtone').pause();
+                
+                localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                document.getElementById('localVideo').srcObject = localStream;
+
+                peerConnection = new RTCPeerConnection(servers);
+                localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+
+                peerConnection.onicecandidate = e => {
+                    if (e.candidate) socket.emit('answer_call', { signal: e.candidate, to: data.from });
+                };
+                peerConnection.ontrack = e => { document.getElementById('remoteVideo').srcObject = e.streams[0]; };
+
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(data.signal));
+                const answer = await peerConnection.createAnswer();
+                await peerConnection.setLocalDescription(answer);
+                socket.emit('answer_call', { signal: answer, to: data.from });
+            }
+        });
+
+        socket.on('call_accepted', signal => {
+            document.getElementById('callStatus').innerText = "Connected";
+            document.getElementById('ringtone').pause();
+            peerConnection.setRemoteDescription(new RTCSessionDescription(signal));
+        });
+
+        function endCall() {
+            document.getElementById('callUI').classList.add('hidden');
+            if (peerConnection) peerConnection.close();
+            if (localStream) localStream.getTracks().forEach(t => t.stop());
+            document.getElementById('ringtone').pause();
+        }
+
+        function toggleMute() { isMuted = !isMuted; localStream.getAudioTracks()[0].enabled = !isMuted; }
+        function toggleVideo() { isVideoOff = !isVideoOff; localStream.getVideoTracks()[0].enabled = !isVideoOff; }
+
+        // ==========================================
+        // 5. CUSTOM BACKGROUNDS
+        // ==========================================
+        function changeBackground() {
+            const url = prompt("Paste an image URL for the chat background:");
+            if (url) {
+                document.getElementById('chatArea').style.backgroundImage = `url('${url}')`;
+                document.getElementById('chatArea').style.backgroundSize = 'cover';
+                localStorage.setItem('diaa_bg', url);
+            }
+        }
+        const savedBg = localStorage.getItem('diaa_bg');
+        if (savedBg) { document.getElementById('chatArea').style.backgroundImage = `url('${savedBg}')`; document.getElementById('chatArea').style.backgroundSize = 'cover'; }
+    </script>
+</body>
+</html>
