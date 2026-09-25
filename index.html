@@ -55,6 +55,11 @@
         .filter-sepia { filter: sepia(100%); }
         .filter-invert { filter: invert(100%); }
         .filter-neon { filter: hue-rotate(180deg) saturate(200%); }
+        .filter-blur { filter: blur(3px); }
+        .filter-sharpen { filter: contrast(150%); }
+        .filter-vintage { filter: sepia(50%) hue-rotate(330deg) saturate(140%); }
+        .filter-cool { filter: hue-rotate(180deg) saturate(150%); }
+        .filter-warm { filter: sepia(30%) saturate(140%); }
 
         .message-actions { opacity: 0; transition: opacity 0.2s; }
         .message-wrapper:hover .message-actions { opacity: 1; }
@@ -62,18 +67,39 @@
         .camera-overlay { position: fixed; inset: 0; background: #000; z-index: 9999; display: none; flex-direction: column; }
         .camera-overlay.active { display: flex; }
         #cameraVideo { width: 100%; height: 100%; object-fit: cover; }
-        .camera-controls { position: absolute; bottom: 40px; left: 0; right: 0; display: flex; justify-content: center; }
+        .camera-controls { position: absolute; bottom: 40px; left: 0; right: 0; display: flex; justify-content: center; gap: 20px; align-items: center; }
         .record-btn { width: 70px; height: 70px; border-radius: 50%; background: white; border: 4px solid rgba(255,255,255,0.5); cursor: pointer; }
         .record-btn.recording { background: #ef4444; border-color: #fff; animation: pulse 1s infinite; }
         @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
         .close-camera { position: absolute; top: 20px; left: 20px; background: rgba(0,0,0,0.5); color: white; width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10000; }
         .switch-camera { position: absolute; top: 20px; right: 20px; background: rgba(0,0,0,0.5); color: white; width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10000; }
+        .filter-btn { background: rgba(255,255,255,0.2); color: white; padding: 8px 12px; border-radius: 20px; cursor: pointer; border: none; font-size: 12px; }
+        .filter-btn.active { background: #00a884; }
+        
+        /* Boot Screen */
+        #bootScreen {
+            position: fixed; inset: 0; background: #111b21; z-index: 99999;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .boot-spinner {
+            width: 50px; height: 50px; border: 4px solid #202c33;
+            border-top: 4px solid #00a884; border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body class="h-screen w-screen overflow-hidden flex items-center justify-center">
 
+    <!-- BOOT SCREEN -->
+    <div id="bootScreen">
+        <div class="boot-spinner mb-4"></div>
+        <h1 class="text-2xl font-bold text-wa_green">whatsappDIaa</h1>
+        <p class="text-gray-400 text-sm mt-2">Loading...</p>
+    </div>
+
     <!-- 1. LOGIN SCREEN -->
-    <div id="loginScreen" class="fixed inset-0 z-50 bg-wa_bg flex items-center justify-center p-4">
+    <div id="loginScreen" class="hidden fixed inset-0 z-50 bg-wa_bg flex items-center justify-center p-4">
         <div class="bg-wa_header p-6 rounded-2xl shadow-2xl w-full max-w-sm border border-wa_border">
             <h1 class="text-2xl font-bold text-wa_green mb-4 text-center">whatsappDIaa</h1>
             <div class="flex justify-center mb-4">
@@ -109,20 +135,21 @@
         </div>
 
         <!-- CHAT AREA -->
-        <div id="chatArea" class="flex-1 flex-col relative h-full hidden md:flex bg-wa_bg">
+        <div id="chatArea" class="flex-1 flex flex-col relative h-full hidden md:flex bg-wa_bg">
             <!-- Background Layers -->
             <div id="bgImageLayer" class="chat-bg-image"></div>
             <video id="bgVideo" class="chat-bg-video hidden" autoplay loop muted playsinline></video>
 
             <!-- Empty State -->
-            <div id="emptyState" class="flex-1 flex flex-col items-center justify-center text-center p-8 z-10">
+            <div id="emptyState" class="absolute inset-0 z-10 flex flex-col items-center justify-center bg-wa_bg md:bg-transparent">
                 <h1 class="text-3xl font-light mb-4">whatsappDIaa Web</h1>
                 <p class="text-gray-400">Select a contact to start messaging.</p>
             </div>
 
             <!-- Active Chat UI -->
-            <div id="activeChatUI" class="absolute inset-0 z-20 flex flex-col bg-wa_bg/95 md:bg-transparent hidden">
-                <div class="bg-wa_header px-4 py-2.5 flex items-center justify-between border-b border-wa_border md:border-none shadow-sm">
+            <div id="activeChatUI" class="absolute inset-0 z-20 flex flex-col hidden">
+                <!-- Header -->
+                <div class="flex-shrink-0 bg-wa_header px-4 py-2.5 flex items-center justify-between border-b border-wa_border shadow-sm">
                     <div class="flex items-center gap-3">
                         <button onclick="goBack()" class="md:hidden text-gray-400 hover:text-white mr-2 text-xl"><i class="fas fa-arrow-left"></i></button>
                         <img id="chatAvatar" src="" class="w-10 h-10 rounded-full object-cover">
@@ -135,9 +162,14 @@
                     </div>
                 </div>
                 
+                <!-- Messages -->
                 <div id="messagesArea" class="flex-1 overflow-y-auto p-4 flex flex-col gap-2 z-10"></div>
                 
-                <div class="bg-wa_header px-2 py-2 flex items-center gap-2 border-t border-wa_border md:border-none z-10">
+                <!-- Input Area -->
+                <div class="flex-shrink-0 bg-wa_header px-2 py-2 flex items-center gap-2 border-t border-wa_border z-10">
+                    <button onclick="document.getElementById('fileInput').click()" class="text-gray-400 hover:text-white text-xl p-2"><i class="fas fa-paperclip"></i></button>
+                    <input type="file" id="fileInput" class="hidden" accept="image/*,.html,.htm,.txt,.pdf,.doc,.docx" onchange="sendFile(event)">
+                    
                     <input type="text" id="msgInput" placeholder="Message" class="flex-1 bg-wa_input px-4 py-2 rounded-lg focus:outline-none text-sm md:text-base" onkeypress="if(event.key==='Enter') sendText()">
                     
                     <select id="voiceEffect" class="bg-wa_input text-xs text-gray-300 rounded px-2 py-2 focus:outline-none cursor-pointer hidden sm:block">
@@ -203,8 +235,9 @@
                     <button onclick="setRingtone('https://www.myinstants.com/media/sounds/iphone-ringtone.mp3')" class="flex-1 bg-wa_input hover:bg-wa_green px-2 py-1 rounded text-xs transition text-white">iPhone</button>
                     <button onclick="setRingtone('https://www.myinstants.com/media/sounds/old-phone-ring.mp3')" class="flex-1 bg-wa_input hover:bg-wa_green px-2 py-1 rounded text-xs transition text-white">Classic</button>
                 </div>
-                <input type="text" id="ringtoneUrlInput" placeholder="Paste any MP3 link here..." class="w-full bg-wa_input px-3 py-2 rounded text-sm focus:outline-none text-white">
-                <button onclick="saveRingtoneUrl()" class="w-full bg-wa_green mt-2 py-1 rounded text-sm font-bold text-white">Save Ringtone</button>
+                <input type="file" id="ringtoneFileInput" accept="audio/*" onchange="uploadRingtone(event)" class="w-full text-sm text-gray-400 mb-2">
+                <input type="text" id="ringtoneUrlInput" placeholder="Or paste MP3 link..." class="w-full bg-wa_input px-3 py-2 rounded text-sm focus:outline-none text-white mb-2">
+                <button onclick="saveRingtoneUrl()" class="w-full bg-wa_green py-1 rounded text-sm font-bold text-white">Save Ringtone</button>
             </div>
 
             <div class="flex gap-3">
@@ -219,6 +252,14 @@
         <div class="switch-camera" onclick="switchCamera()"><i class="fas fa-sync-alt"></i></div>
         <video id="cameraVideo" autoplay playsinline></video>
         <div class="camera-controls">
+            <button onclick="applyCameraFilter('')" class="filter-btn">Normal</button>
+            <button onclick="applyCameraFilter('filter-bw')" class="filter-btn">B&W</button>
+            <button onclick="applyCameraFilter('filter-sepia')" class="filter-btn">Sepia</button>
+            <button onclick="applyCameraFilter('filter-vintage')" class="filter-btn">Vintage</button>
+            <button onclick="applyCameraFilter('filter-cool')" class="filter-btn">Cool</button>
+            <button onclick="applyCameraFilter('filter-warm')" class="filter-btn">Warm</button>
+        </div>
+        <div class="camera-controls" style="bottom: 120px;">
             <div class="record-btn" id="cameraRecordBtn" onmousedown="startCameraRecording()" onmouseup="stopCameraRecording()" ontouchstart="startCameraRecording()" ontouchend="stopCameraRecording()"></div>
         </div>
     </div>
@@ -253,7 +294,7 @@
         </div>
     </div>
 
-    <audio id="ringtone" src="https://www.myinstants.com/media/sounds/iphone-ringtone.mp3" loop></audio>
+    <audio id="ringtone" loop></audio>
 
     <script>
         const SERVER_URL = "https://whatsappgggg.onrender.com/";
@@ -280,16 +321,22 @@
         let cameraRecorder = null;
         let cameraChunks = [];
         let facingMode = 'user';
+        let currentCameraFilter = '';
 
-        window.onload = () => {
-            const saved = localStorage.getItem('diaa_user');
-            if (saved) { myData = JSON.parse(saved); showApp(); }
-            loadSavedBg();
-            loadSavedTextColor();
-            
-            const savedRingtone = localStorage.getItem('diaa_ringtone');
-            if (savedRingtone) document.getElementById('ringtone').src = savedRingtone;
-        };
+        // BOOT SCREEN
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                document.getElementById('bootScreen').style.display = 'none';
+                const saved = localStorage.getItem('diaa_user');
+                if (saved) { myData = JSON.parse(saved); showApp(); }
+                else { document.getElementById('loginScreen').classList.remove('hidden'); }
+                loadSavedBg();
+                loadSavedTextColor();
+                
+                const savedRingtone = localStorage.getItem('diaa_ringtone');
+                if (savedRingtone) document.getElementById('ringtone').src = savedRingtone;
+            }, 1500);
+        });
 
         function previewImage(e) {
             const file = e.target.files[0];
@@ -346,6 +393,21 @@
         }
 
         // RINGTONE FUNCTIONS
+        function uploadRingtone(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    const url = ev.target.result;
+                    document.getElementById('ringtoneUrlInput').value = 'Uploaded file';
+                    localStorage.setItem('diaa_ringtone', url);
+                    document.getElementById('ringtone').src = url;
+                    alert("Ringtone uploaded from file!");
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
         function setRingtone(url) {
             document.getElementById('ringtoneUrlInput').value = url;
             document.getElementById('ringtone').src = url;
@@ -355,11 +417,11 @@
         }
         function saveRingtoneUrl() {
             const url = document.getElementById('ringtoneUrlInput').value.trim();
-            if (url) {
+            if (url && url !== 'Uploaded file') {
                 localStorage.setItem('diaa_ringtone', url);
                 document.getElementById('ringtone').src = url;
                 alert("Ringtone saved!");
-            } else { alert("Please paste an MP3 link first!"); }
+            }
         }
 
         socket.on('update_user_list', (users) => {
@@ -402,18 +464,17 @@
             document.getElementById('messagesArea').innerHTML = '';
             sentMessages.clear();
 
-            // Mobile Logic
             if (window.innerWidth < 768) {
-                document.getElementById('sidebar').classList.add('hidden');
-                document.getElementById('chatArea').classList.remove('hidden');
-                document.getElementById('chatArea').classList.add('flex');
+                document.getElementById('sidebar').style.display = 'none';
+                document.getElementById('chatArea').style.display = 'flex';
             }
         }
 
         function goBack() {
-            document.getElementById('sidebar').classList.remove('hidden');
-            document.getElementById('chatArea').classList.add('hidden');
-            document.getElementById('chatArea').classList.remove('flex');
+            if (window.innerWidth < 768) {
+                document.getElementById('chatArea').style.display = 'none';
+                document.getElementById('sidebar').style.display = 'flex';
+            }
             document.getElementById('activeChatUI').classList.add('hidden');
             document.getElementById('emptyState').classList.remove('hidden');
         }
@@ -430,6 +491,31 @@
             }
         }
 
+        function sendFile(event) {
+            const file = event.target.files[0];
+            if (file && activeUser) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const msgId = Date.now().toString() + Math.random().toString();
+                    let type = 'file';
+                    if (file.type.startsWith('image/')) type = 'photo';
+                    else if (file.name.endsWith('.html') || file.name.endsWith('.htm')) type = 'html';
+                    
+                    const msg = { 
+                        id: msgId, from: myData.username, to: activeUser.username, 
+                        text: e.target.result, fileName: file.name,
+                        type: type, 
+                        time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+                        color: document.getElementById('textColorPicker').value 
+                    };
+                    socket.emit('send_message', msg);
+                    appendMessage(msg);
+                };
+                reader.readAsDataURL(file);
+            }
+            event.target.value = '';
+        }
+
         socket.on('receive_message', (msg) => {
             if ((msg.to === myData.username || msg.from === myData.username) && activeUser && (msg.from === activeUser.username || msg.to === activeUser.username)) {
                 if (!sentMessages.has(msg.id)) { appendMessage(msg); sentMessages.add(msg.id); }
@@ -442,9 +528,12 @@
             const bubbleClass = isMe ? 'glass-bubble self-end' : 'glass-bubble-received self-start';
             const textColor = msg.color || '#ffffff';
             let content = msg.text;
+            
             if (msg.type === 'voice') content = `<audio controls src="${msg.text}" class="w-48" style="playbackRate: ${document.getElementById('voiceEffect').value}"></audio>`;
             else if (msg.type === 'photo') content = `<img src="${msg.text}" class="max-w-full rounded-lg cursor-pointer" onclick="window.open(this.src)">`;
             else if (msg.type === 'video') content = `<video controls src="${msg.text}" class="max-w-full rounded-lg"></video>`;
+            else if (msg.type === 'html') content = `<a href="${msg.text}" download="${msg.fileName || 'file.html'}" class="text-blue-400 underline"><i class="fas fa-file-code mr-2"></i>${msg.fileName || 'HTML File'}</a>`;
+            else if (msg.type === 'file') content = `<a href="${msg.text}" download="${msg.fileName || 'file'}" class="text-blue-400 underline"><i class="fas fa-file mr-2"></i>${msg.fileName || 'File'}</a>`;
             
             const wrapper = document.createElement('div');
             wrapper.className = 'message-wrapper flex flex-col max-w-[70%] ' + (isMe ? 'self-end' : 'self-start');
@@ -501,12 +590,37 @@
             try {
                 if (cameraStream) cameraStream.getTracks().forEach(track => track.stop());
                 cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facingMode }, audio: true });
-                document.getElementById('cameraVideo').srcObject = cameraStream;
+                const videoEl = document.getElementById('cameraVideo');
+                videoEl.srcObject = cameraStream;
+                videoEl.className = ''; // Reset filters
                 document.getElementById('cameraOverlay').classList.add('active');
+                currentCameraFilter = '';
             } catch (err) { alert("Camera access denied!"); }
         }
-        function closeCamera() { if (cameraStream) { cameraStream.getTracks().forEach(track => track.stop()); cameraStream = null; } document.getElementById('cameraOverlay').classList.remove('active'); document.getElementById('cameraRecordBtn').classList.remove('recording'); }
-        function switchCamera() { facingMode = facingMode === 'user' ? 'environment' : 'user'; if (cameraStream) { cameraStream.getTracks().forEach(track => track.stop()); openCamera(); } }
+
+        function applyCameraFilter(filterClass) {
+            const videoEl = document.getElementById('cameraVideo');
+            videoEl.className = filterClass;
+            currentCameraFilter = filterClass;
+            
+            // Update active button
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.getAttribute('onclick').includes(filterClass)) btn.classList.add('active');
+            });
+        }
+
+        function closeCamera() { 
+            if (cameraStream) { cameraStream.getTracks().forEach(track => track.stop()); cameraStream = null; } 
+            document.getElementById('cameraOverlay').classList.remove('active'); 
+            document.getElementById('cameraRecordBtn').classList.remove('recording'); 
+        }
+        
+        function switchCamera() { 
+            facingMode = facingMode === 'user' ? 'environment' : 'user'; 
+            if (cameraStream) { cameraStream.getTracks().forEach(track => track.stop()); openCamera(); } 
+        }
+        
         function startCameraRecording() {
             if (!cameraStream) return;
             cameraChunks = [];
@@ -517,7 +631,14 @@
             cameraRecorder = mr;
             document.getElementById('cameraRecordBtn').classList.add('recording');
         }
-        function stopCameraRecording() { if (cameraRecorder && cameraRecorder.state !== 'inactive') { cameraRecorder.stop(); document.getElementById('cameraRecordBtn').classList.remove('recording'); } }
+        
+        function stopCameraRecording() { 
+            if (cameraRecorder && cameraRecorder.state !== 'inactive') { 
+                cameraRecorder.stop(); 
+                document.getElementById('cameraRecordBtn').classList.remove('recording'); 
+            } 
+        }
+        
         function sendCameraMedia() {
             if (cameraChunks.length === 0) { closeCamera(); return; }
             const blob = new Blob(cameraChunks, { type: 'video/webm' });
@@ -525,7 +646,12 @@
             reader.readAsDataURL(blob);
             reader.onloadend = () => {
                 const msgId = Date.now().toString() + Math.random().toString();
-                const msg = { id: msgId, from: myData.username, to: activeUser.username, text: reader.result, type: 'video', time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}), color: document.getElementById('textColorPicker').value };
+                const msg = { 
+                    id: msgId, from: myData.username, to: activeUser.username, 
+                    text: reader.result, type: 'video', filter: currentCameraFilter,
+                    time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}), 
+                    color: document.getElementById('textColorPicker').value 
+                };
                 socket.emit('send_message', msg);
                 closeCamera();
             };
@@ -546,8 +672,8 @@
                 document.getElementById('callStatus').innerText = type === 'video' ? "Video calling..." : "Voice calling...";
                 peer = new SimplePeer({ initiator: true, trickle: false, stream: localStream, config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] } });
                 peer.on('signal', data => { socket.emit('call_user', { userToCall: activeUser.username, signal: data, from: myData.username, name: myData.username, type: type }); });
-                peer.on('stream', remoteStream => { const remoteVideo = document.getElementById('remoteVideo'); remoteVideo.srcObject = remoteStream; remoteVideo.play().catch(e => console.log("Remote play error:", e)); document.getElementById('callStatus').innerText = "Connected"; document.getElementById('ringtone').pause(); });
-                document.getElementById('ringtone').play();
+                peer.on('stream', remoteStream => { const remoteVideo = document.getElementById('remoteVideo'); remoteVideo.srcObject = remoteStream; remoteVideo.play().catch(e => console.log("Remote play error:", e)); document.getElementById('callStatus').innerText = "Connected"; });
+                // Don't play ringtone when making a call
             } catch (err) { console.error("Call Error:", err); alert("Camera error: " + err.message); }
         }
 
@@ -558,6 +684,7 @@
             document.getElementById('incomingName').innerText = `${data.name} is calling...`;
             document.getElementById('incomingCallType').innerText = callType === 'video' ? 'Video Call' : 'Voice Call';
             document.getElementById('incomingCallUI').classList.remove('hidden');
+            // ONLY play ringtone when receiving a call
             document.getElementById('ringtone').play();
         });
 
@@ -637,18 +764,23 @@
                 imageLayer.style.backgroundImage = 'none';
                 videoLayer.src = url;
                 videoLayer.classList.remove('hidden');
+                console.log("Video background applied");
             } else {
                 videoLayer.classList.add('hidden');
                 videoLayer.src = "";
                 imageLayer.style.backgroundImage = `url('${url}')`;
+                console.log("Image background applied:", url);
             }
         }
 
         function loadSavedBg() {
             const saved = localStorage.getItem('diaa_bg');
             const savedType = localStorage.getItem('diaa_bg_type') || 'image';
-            if (saved) { applyBackground(saved, savedType === 'video'); }
-            else { applyBackground('https://images.unsplash.com/photo-1462331940025-496dfbfc7564?q=80&w=2000&auto=format&fit=crop', false); }
+            if (saved) { 
+                applyBackground(saved, savedType === 'video'); 
+            } else {
+                applyBackground('https://images.unsplash.com/photo-1462331940025-496dfbfc7564?q=80&w=2000&auto=format&fit=crop', false); 
+            }
         }
 
         function changeTextColor(color) { document.documentElement.style.setProperty('--msg-color', color); localStorage.setItem('diaa_text_color', color); }
