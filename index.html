@@ -4,9 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>whatsappDIaa</title>
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#111b21">
     
+    <!-- PWA / SHORTCUT META TAGS (Makes it installable on phones) -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#111b21">
+    <link rel="apple-touch-icon" href="https://img.icons8.com/color/96/whatsapp--v1.png">
+    <link rel="manifest" href='data:application/manifest+json,{"name":"whatsappDIaa","short_name":"whatsappDIaa","start_url":".","display":"standalone","background_color":"%23111b21","theme_color":"%23111b21","icons":[{"src":"https://img.icons8.com/color/96/whatsapp--v1.png","sizes":"192x192","type":"image/png"}]}'>
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
@@ -25,7 +30,7 @@
         }
     </script>
     <style>
-        body { background-color: #0b141a; color: #e9edef; font-family: sans-serif; }
+        body { background-color: #0b141a; color: #e9edef; font-family: sans-serif; -webkit-tap-highlight-color: transparent; }
         ::-webkit-scrollbar { width: 5px; } ::-webkit-scrollbar-thumb { background: #374151; }
         
         video { width: 100%; height: 100%; object-fit: cover; background: #000; }
@@ -122,8 +127,10 @@
     </div>
 
     <!-- 2. MAIN APP -->
-    <div id="mainApp" class="hidden w-full h-full max-w-[1600px] mx-auto bg-wa_bg shadow-2xl md:flex overflow-hidden">
-        <div class="w-full md:w-[350px] flex flex-col border-r border-wa_border bg-wa_bg relative z-10">
+    <div id="mainApp" class="hidden w-full h-full max-w-[1600px] mx-auto bg-wa_bg shadow-2xl md:flex overflow-hidden relative">
+        
+        <!-- SIDEBAR (Contact List) -->
+        <div id="sidebar" class="w-full md:w-[350px] flex flex-col border-r border-wa_border bg-wa_bg relative z-10 h-full">
             <div class="bg-wa_header px-4 py-3 flex justify-between items-center">
                 <img id="myAvatar" src="" class="w-10 h-10 rounded-full object-cover cursor-pointer" onclick="openProfileEdit()" title="Edit Profile">
                 <div class="flex gap-4 text-gray-400">
@@ -139,17 +146,23 @@
             <div id="userList" class="flex-1 overflow-y-auto p-2"></div>
         </div>
 
-        <div class="flex-1 flex flex-col relative bg-wa_chat_bg" id="chatArea">
+        <!-- CHAT WINDOW -->
+        <div id="chatWindow" class="w-full md:flex-1 flex flex-col relative bg-wa_chat_bg hidden md:flex h-full absolute md:relative inset-0 z-20 bg-wa_bg">
             <div id="bgImageLayer" class="chat-bg-image"></div>
 
-            <div id="emptyState" class="flex-1 flex flex-col items-center justify-center text-center p-8 relative z-10">
+            <!-- Empty State (Desktop only usually, but good for initial mobile load) -->
+            <div id="emptyState" class="flex-1 flex flex-col items-center justify-center text-center p-8 relative z-10 md:flex hidden">
                 <h1 class="text-3xl font-light mb-4">whatsappDIaa Web</h1>
                 <p class="text-gray-400">Select a contact to start messaging.</p>
             </div>
 
-            <div id="activeChatUI" class="hidden flex-1 flex flex-col h-full relative z-10">
-                <div class="bg-wa_header px-4 py-2.5 flex items-center justify-between">
+            <!-- Active Chat UI -->
+            <div id="activeChatUI" class="hidden flex-1 flex flex-col h-full relative z-10 w-full">
+                <div class="bg-wa_header px-4 py-2.5 flex items-center justify-between border-b border-wa_border md:border-none">
                     <div class="flex items-center gap-3">
+                        <!-- BACK BUTTON FOR MOBILE -->
+                        <button onclick="goBack()" class="md:hidden text-gray-400 hover:text-white mr-2 text-xl"><i class="fas fa-arrow-left"></i></button>
+                        
                         <img id="chatAvatar" src="" class="w-10 h-10 rounded-full object-cover">
                         <h2 id="chatName" class="text-lg"></h2>
                     </div>
@@ -160,16 +173,15 @@
                     </div>
                 </div>
                 <div id="messagesArea" class="flex-1 overflow-y-auto p-4 flex flex-col gap-2"></div>
-                <div class="bg-wa_header px-4 py-3 flex items-center gap-3">
+                <div class="bg-wa_header px-4 py-3 flex items-center gap-3 border-t border-wa_border md:border-none">
                     <input type="text" id="msgInput" placeholder="Message" class="flex-1 bg-wa_input px-4 py-2 rounded-lg focus:outline-none" onkeypress="if(event.key==='Enter') sendText()">
                     
-                    <select id="voiceEffect" class="bg-wa_input text-xs text-gray-300 rounded px-2 py-2 focus:outline-none cursor-pointer">
+                    <select id="voiceEffect" class="bg-wa_input text-xs text-gray-300 rounded px-2 py-2 focus:outline-none cursor-pointer hidden sm:block">
                         <option value="1">Normal</option>
                         <option value="1.5">Chipmunk</option>
                         <option value="0.75">Monster</option>
                     </select>
 
-                    <!-- CAMERA BUTTON -->
                     <button onclick="openCamera()" class="text-wa_green text-2xl p-2 cursor-pointer hover:scale-110 transition" title="Take Photo/Video">
                         <i class="fas fa-camera"></i>
                     </button>
@@ -420,7 +432,7 @@
         }
 
         // ==========================================
-        // 4. MESSAGING
+        // 4. MESSAGING & MOBILE NAVIGATION
         // ==========================================
         function openChat(username, avatar) {
             activeUser = { username, avatar };
@@ -430,6 +442,22 @@
             document.getElementById('chatAvatar').src = avatar;
             document.getElementById('messagesArea').innerHTML = '';
             sentMessages.clear();
+
+            // MOBILE LOGIC: Hide sidebar, show chat full screen
+            if (window.innerWidth < 768) {
+                document.getElementById('sidebar').classList.add('hidden');
+                document.getElementById('chatWindow').classList.remove('hidden');
+                document.getElementById('chatWindow').classList.add('flex');
+            }
+        }
+
+        // NEW: Back button for mobile
+        function goBack() {
+            document.getElementById('sidebar').classList.remove('hidden');
+            document.getElementById('chatWindow').classList.add('hidden');
+            document.getElementById('chatWindow').classList.remove('flex');
+            document.getElementById('activeChatUI').classList.add('hidden');
+            document.getElementById('emptyState').classList.remove('hidden');
         }
 
         function sendText() {
@@ -612,13 +640,12 @@
         }
 
         // ==========================================
-        // 7. VIDEO/VOICE CALLS (FIXED FOR CHROMEBOOK)
+        // 7. VIDEO/VOICE CALLS
         // ==========================================
         async function startCall(type) {
             if (!activeUser) return;
             callType = type;
             try {
-                // SIMPLIFIED CAMERA SETTINGS TO PREVENT BLACK SCREEN
                 localStream = await navigator.mediaDevices.getUserMedia({ 
                     video: type === 'video' ? true : false, 
                     audio: true 
@@ -675,7 +702,6 @@
                 document.getElementById('activeCallName').innerText = incomingCaller.name;
                 document.getElementById('ringtone').pause();
 
-                // SIMPLIFIED CAMERA SETTINGS
                 localStream = await navigator.mediaDevices.getUserMedia({ 
                     video: callType === 'video' ? true : false, 
                     audio: true 
@@ -730,7 +756,7 @@
         function toggleVideo() { isVideoOff = !isVideoOff; if (localStream && callType === 'video') localStream.getVideoTracks()[0].enabled = !isVideoOff; }
 
         // ==========================================
-        // 8. BACKGROUNDS (FIXED FOR VIDEO) & COLORS
+        // 8. BACKGROUNDS & COLORS
         // ==========================================
         function openBgModal() { document.getElementById('bgModal').classList.remove('hidden'); }
         function closeBgModal() { document.getElementById('bgModal').classList.add('hidden'); }
@@ -763,7 +789,7 @@
         }
 
         function applyBackground(url, isVideo) {
-            const chatArea = document.getElementById('chatArea');
+            const chatArea = document.getElementById('chatWindow'); // Changed to chatWindow to cover full mobile screen
             const oldVideo = document.getElementById('bgVideo');
             if (oldVideo) oldVideo.remove();
             const imageLayer = document.getElementById('bgImageLayer');
