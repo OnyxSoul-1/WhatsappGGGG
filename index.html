@@ -29,21 +29,18 @@
         ::-webkit-scrollbar { width: 5px; } ::-webkit-scrollbar-thumb { background: #374151; }
         video { width: 100%; height: 100%; object-fit: cover; background: #000; }
         
-        /* Background Overlay to make text readable */
-        .chat-bg-overlay {
-            position: absolute; inset: 0; background-color: rgba(11, 20, 26, 0.85); 
-            pointer-events: none; z-index: 0;
-        }
-        .chat-bg-image {
-            position: absolute; inset: 0; background-size: cover; background-position: center;
-            z-index: -1;
-        }
-
-        /* Ringing Animation */
+        .chat-bg-overlay { position: absolute; inset: 0; background-color: rgba(11, 20, 26, 0.85); pointer-events: none; z-index: 0; }
+        .chat-bg-image { position: absolute; inset: 0; background-size: cover; background-position: center; z-index: -1; }
+        
         @keyframes pulse-ring { 0% { transform: scale(0.8); opacity: 0.5; } 100% { transform: scale(2.5); opacity: 0; } }
         .pulse-ring { animation: pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite; }
         
         .modal-bg { background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); }
+        
+        /* Fix video display */
+        #remoteVideo, #localVideo {
+            background: #111;
+        }
     </style>
 </head>
 <body class="h-screen w-screen overflow-hidden flex items-center justify-center">
@@ -77,7 +74,6 @@
                 </div>
             </div>
             
-            <!-- Search Bar for Adding People -->
             <div class="p-2 bg-wa_bg border-b border-wa_border">
                 <input type="text" id="searchUser" onkeyup="filterUsers()" placeholder="Search or add people..." class="w-full bg-wa_input px-4 py-2 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-wa_green">
             </div>
@@ -86,7 +82,6 @@
         </div>
 
         <div class="flex-1 flex flex-col relative bg-wa_chat_bg" id="chatArea">
-            <!-- Dynamic Background Layers -->
             <div id="bgImageLayer" class="chat-bg-image"></div>
             <div class="chat-bg-overlay"></div>
 
@@ -109,7 +104,14 @@
                 <div id="messagesArea" class="flex-1 overflow-y-auto p-4 flex flex-col gap-2"></div>
                 <div class="bg-wa_header px-4 py-3 flex items-center gap-3">
                     <input type="text" id="msgInput" placeholder="Message" class="flex-1 bg-wa_input px-4 py-2 rounded-lg focus:outline-none" onkeypress="if(event.key==='Enter') sendText()">
-                    <button id="micBtn" onmousedown="startRecording()" onmouseup="stopRecording()" class="text-wa_green text-2xl p-2"><i class="fas fa-microphone"></i></button>
+                    <button id="micBtn" 
+                            onmousedown="startRecording()" 
+                            onmouseup="stopRecording()" 
+                            ontouchstart="startRecording()" 
+                            ontouchend="stopRecording()"
+                            class="text-wa_green text-2xl p-2 cursor-pointer select-none">
+                        <i class="fas fa-microphone"></i>
+                    </button>
                     <button onclick="sendText()" class="text-wa_green text-2xl p-2"><i class="fas fa-paper-plane"></i></button>
                 </div>
             </div>
@@ -200,7 +202,9 @@
         let audioChunks = [];
         let incomingSignal = null;
         let incomingCaller = null;
-        let allUsers = []; // Store all users for searching
+        let allUsers = [];
+        let isRecording = false;
+        let sentMessages = new Set(); // FIX: Track sent messages to prevent duplicates
 
         // ==========================================
         // 1. LOGIN & SAVING
@@ -281,13 +285,13 @@
         function searchAndAddUser() {
             const name = document.getElementById('addUserInput').value.trim().toLowerCase();
             if(!name) return;
-            document.getElementById('searchUser').value = name; // Put it in the main search bar
-            filterUsers(); // Filter the list
+            document.getElementById('searchUser').value = name;
+            filterUsers();
             closeAddModal();
         }
 
         // ==========================================
-        // 3. FAST MESSAGING
+        // 3. FAST MESSAGING (FIXED DUPLICATES)
         // ==========================================
         function openChat(username, avatar) {
             activeUser = { username, avatar };
@@ -295,29 +299,44 @@
             document.getElementById('activeChatUI').classList.remove('hidden');
             document.getElementById('chatName').innerText = username;
             document.getElementById('chatAvatar').src = avatar;
-            document.getElementById('messagesArea').innerHTML = ''; // Clear for demo
+            document.getElementById('messagesArea').innerHTML = '';
+            sentMessages.clear(); // Clear sent messages when switching chats
         }
 
         function sendText() {
             const input = document.getElementById('msgInput');
             const text = input.value.trim();
             if (text && activeUser) {
-                const msg = { from: myData.username, to: activeUser.username, text, type: 'text', time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) };
+                const msgId = Date.now().toString() + Math.random().toString();
+                const msg = { 
+                    id: msgId,
+                    from: myData.username, 
+                    to: activeUser.username, 
+                    text, 
+                    type: 'text', 
+                    time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) 
+                };
+                
+                // Only send to server, don't append locally yet
                 socket.emit('send_message', msg);
-                appendMessage(msg);
                 input.value = '';
             }
         }
 
         socket.on('receive_message', (msg) => {
-            if (msg.to === myData.username || msg.from === myData.username) {
-                if (activeUser && (msg.from === activeUser.username || msg.to === activeUser.username)) {
+            // FIX: Only show message if it's for this chat AND we haven't shown it before
+            if ((msg.to === myData.username || msg.from === myData.username) && 
+                activeUser && 
+                (msg.from === activeUser.username || msg.to === activeUser.username)) {
+                
+                // Check if we already displayed this message
+                if (!sentMessages.has(msg.id)) {
                     appendMessage(msg);
+                    sentMessages.add(msg.id); // Mark as displayed
                 }
             }
         });
 
-        // THE SPEED FIX: Only add the new message, don't reload the whole list!
         function appendMessage(msg) {
             const area = document.getElementById('messagesArea');
             const isMe = msg.from === myData.username;
@@ -330,61 +349,146 @@
                             <span class="text-[10px] text-gray-400 block text-right mt-1">${msg.time}</span>
                           </div>`;
             
-            area.insertAdjacentHTML('beforeend', html); // Lightning fast!
+            area.insertAdjacentHTML('beforeend', html);
             area.scrollTop = area.scrollHeight;
         }
 
         // ==========================================
-        // 4. VOICE NOTES
+        // 4. VOICE NOTES (HOLD TO RECORD - FIXED)
         // ==========================================
         async function startRecording() {
+            if (isRecording) return; // Prevent multiple starts
+            
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 mediaRecorder = new MediaRecorder(stream);
                 audioChunks = [];
-                mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+                
+                mediaRecorder.ondataavailable = e => {
+                    if (e.data.size > 0) audioChunks.push(e.data);
+                };
+                
                 mediaRecorder.onstop = sendVoiceNote;
                 mediaRecorder.start();
-                document.getElementById('micBtn').classList.add('text-red-500', 'animate-pulse');
-            } catch (err) { alert("Microphone access denied!"); }
-        }
-        function stopRecording() {
-            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-                mediaRecorder.stop();
-                document.getElementById('micBtn').classList.remove('text-red-500', 'animate-pulse');
+                isRecording = true;
+                
+                // Visual feedback
+                const btn = document.getElementById('micBtn');
+                btn.classList.add('text-red-500', 'animate-pulse');
+                btn.innerHTML = '<i class="fas fa-stop"></i>';
+                
+            } catch (err) { 
+                alert("Microphone access denied!"); 
+                isRecording = false;
             }
         }
+
+        function stopRecording() {
+            if (!isRecording) return;
+            
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+                // Stop all audio tracks
+                mediaRecorder.stream.getTracks().forEach(track => track.stop());
+            }
+            
+            isRecording = false;
+            const btn = document.getElementById('micBtn');
+            btn.classList.remove('text-red-500', 'animate-pulse');
+            btn.innerHTML = '<i class="fas fa-microphone"></i>';
+        }
+
         function sendVoiceNote() {
+            if (audioChunks.length === 0) return;
+            
             const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
             const reader = new FileReader();
             reader.readAsDataURL(audioBlob);
             reader.onloadend = () => {
-                const msg = { from: myData.username, to: activeUser.username, text: reader.result, type: 'voice', time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) };
+                const msgId = Date.now().toString() + Math.random().toString();
+                const msg = { 
+                    id: msgId,
+                    from: myData.username, 
+                    to: activeUser.username, 
+                    text: reader.result, 
+                    type: 'voice', 
+                    time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) 
+                };
                 socket.emit('send_message', msg);
-                appendMessage(msg);
+                audioChunks = [];
             };
         }
 
         // ==========================================
-        // 5. CALLS (SimplePeer)
+        // 5. VIDEO CALLS (FIXED BLACK SCREEN)
         // ==========================================
         async function startCall(type) {
             if (!activeUser) return;
-            localStream = await navigator.mediaDevices.getUserMedia({ video: type === 'video', audio: true });
-            document.getElementById('localVideo').srcObject = localStream;
-            document.getElementById('activeCallUI').classList.remove('hidden');
-            document.getElementById('activeCallName').innerText = activeUser.username;
-            document.getElementById('activeCallAvatar').src = activeUser.avatar;
-            document.getElementById('localVideo').style.display = type === 'video' ? 'block' : 'none';
+            
+            try {
+                // Get camera and mic with better constraints
+                localStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: type === 'video' ? { 
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 },
+                        facingMode: "user"
+                    } : false, 
+                    audio: true 
+                });
+                
+                // Set local video immediately
+                const localVideo = document.getElementById('localVideo');
+                localVideo.srcObject = localStream;
+                localVideo.style.display = type === 'video' ? 'block' : 'none';
+                
+                // Show call UI
+                document.getElementById('activeCallUI').classList.remove('hidden');
+                document.getElementById('activeCallName').innerText = activeUser.username;
+                document.getElementById('activeCallAvatar').src = activeUser.avatar;
+                document.getElementById('callStatus').innerText = "Calling...";
+                
+                // Initialize SimplePeer with better config
+                peer = new SimplePeer({ 
+                    initiator: true, 
+                    trickle: false, 
+                    stream: localStream,
+                    config: {
+                        iceServers: [
+                            { urls: 'stun:stun.l.google.com:19302' },
+                            { urls: 'stun:stun1.l.google.com:19302' }
+                        ]
+                    }
+                });
 
-            peer = new SimplePeer({ initiator: true, trickle: false, stream: localStream });
-            peer.on('signal', data => socket.emit('call_user', { userToCall: activeUser.username, signal: data, from: myData.username, name: myData.username }));
-            peer.on('stream', remoteStream => {
-                document.getElementById('remoteVideo').srcObject = remoteStream;
-                document.getElementById('callStatus').innerText = "Connected";
-                document.getElementById('ringtone').pause();
-            });
-            document.getElementById('ringtone').play();
+                peer.on('signal', data => {
+                    socket.emit('call_user', { 
+                        userToCall: activeUser.username, 
+                        signal: data, 
+                        from: myData.username, 
+                        name: myData.username 
+                    });
+                });
+
+                peer.on('stream', remoteStream => {
+                    console.log('Received remote stream');
+                    const remoteVideo = document.getElementById('remoteVideo');
+                    remoteVideo.srcObject = remoteStream;
+                    remoteVideo.play().catch(e => console.log('Video play error:', e));
+                    document.getElementById('callStatus').innerText = "Connected";
+                    document.getElementById('ringtone').pause();
+                });
+
+                peer.on('error', err => {
+                    console.error('Peer error:', err);
+                    document.getElementById('callStatus').innerText = "Connection error";
+                });
+
+                document.getElementById('ringtone').play();
+                
+            } catch (err) {
+                console.error('GetUserMedia error:', err);
+                alert("Camera/Mic access denied or not available!");
+            }
         }
 
         socket.on('incoming_call', (data) => {
@@ -395,38 +499,106 @@
             document.getElementById('ringtone').play();
         });
 
-        function acceptCall() {
-            document.getElementById('incomingCallUI').classList.add('hidden');
-            document.getElementById('activeCallUI').classList.remove('hidden');
-            document.getElementById('activeCallName').innerText = incomingCaller.name;
-            document.getElementById('ringtone').pause();
+        async function acceptCall() {
+            try {
+                document.getElementById('incomingCallUI').classList.add('hidden');
+                document.getElementById('activeCallUI').classList.remove('hidden');
+                document.getElementById('activeCallName').innerText = incomingCaller.name;
+                document.getElementById('ringtone').pause();
 
-            navigator.mediaDevices.getUserMedia({ video: true, audio: true }).then(stream => {
-                localStream = stream;
-                document.getElementById('localVideo').srcObject = stream;
-                document.getElementById('localVideo').style.display = 'block';
-                peer = new SimplePeer({ initiator: false, trickle: false, stream: localStream });
-                peer.on('signal', data => socket.emit('answer_call', { signal: data, to: incomingCaller.username }));
+                localStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 },
+                        facingMode: "user"
+                    }, 
+                    audio: true 
+                });
+                
+                const localVideo = document.getElementById('localVideo');
+                localVideo.srcObject = localStream;
+                localVideo.style.display = 'block';
+
+                peer = new SimplePeer({ 
+                    initiator: false, 
+                    trickle: false, 
+                    stream: localStream,
+                    config: {
+                        iceServers: [
+                            { urls: 'stun:stun.l.google.com:19302' },
+                            { urls: 'stun:stun1.l.google.com:19302' }
+                        ]
+                    }
+                });
+
+                peer.on('signal', data => {
+                    socket.emit('answer_call', { signal: data, to: incomingCaller.username });
+                });
+
                 peer.on('stream', remoteStream => {
-                    document.getElementById('remoteVideo').srcObject = remoteStream;
+                    console.log('Received remote stream');
+                    const remoteVideo = document.getElementById('remoteVideo');
+                    remoteVideo.srcObject = remoteStream;
+                    remoteVideo.play().catch(e => console.log('Video play error:', e));
                     document.getElementById('callStatus').innerText = "Connected";
                 });
+
+                peer.on('error', err => {
+                    console.error('Peer error:', err);
+                });
+
                 peer.signal(incomingSignal);
-            });
+                
+            } catch (err) {
+                console.error('Accept call error:', err);
+                alert("Camera/Mic access denied!");
+            }
         }
 
-        function declineCall() { document.getElementById('incomingCallUI').classList.add('hidden'); document.getElementById('ringtone').pause(); }
-        socket.on('call_accepted', (data) => peer.signal(data.signal));
+        function declineCall() { 
+            document.getElementById('incomingCallUI').classList.add('hidden'); 
+            document.getElementById('ringtone').pause(); 
+        }
+        
+        socket.on('call_accepted', (data) => {
+            if (peer) {
+                peer.signal(data.signal);
+            }
+        });
 
         function endCall() {
             document.getElementById('activeCallUI').classList.add('hidden');
             document.getElementById('incomingCallUI').classList.add('hidden');
             document.getElementById('ringtone').pause();
-            if (peer) peer.destroy();
-            if (localStream) localStream.getTracks().forEach(t => t.stop());
+            
+            if (peer) {
+                peer.destroy();
+                peer = null;
+            }
+            
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+                localStream = null;
+            }
+            
+            // Clear video sources
+            document.getElementById('remoteVideo').srcObject = null;
+            document.getElementById('localVideo').srcObject = null;
         }
-        function toggleMute() { isMuted = !isMuted; localStream.getAudioTracks()[0].enabled = !isMuted; }
-        function toggleVideo() { isVideoOff = !isVideoOff; localStream.getVideoTracks()[0].enabled = !isVideoOff; }
+
+        function toggleMute() { 
+            isMuted = !isMuted; 
+            if (localStream) {
+                localStream.getAudioTracks()[0].enabled = !isMuted; 
+            }
+        }
+        
+        function toggleVideo() { 
+            isVideoOff = !isVideoOff; 
+            if (localStream) {
+                localStream.getVideoTracks()[0].enabled = !isVideoOff; 
+            }
+        }
 
         // ==========================================
         // 6. BEAUTIFUL BACKGROUNDS
@@ -465,7 +637,6 @@
             if (saved) {
                 document.getElementById('bgImageLayer').style.backgroundImage = `url('${saved}')`;
             } else {
-                // Default beautiful Galaxy background
                 applyBackground('https://images.unsplash.com/photo-1462331940025-496dfbfc7564?q=80&w=2000&auto=format&fit=crop');
             }
         }
