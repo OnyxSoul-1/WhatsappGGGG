@@ -1,12 +1,19 @@
-<!DOCTYPE html>
-<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>whatsappDIaa</title>
+    
+    <!-- REAL APP ICONS (Green with White Chat Bubble) -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0iIzAwYTg4NCIvPjxwYXRoIGQ9Ik0yNTYgMTI4Yy03MCAwLTEyOCA1OC0xMjggMTI4IDAgMjIgNiA0MyAxNiA2MWwtMjIgODMgODMtMjJjMTggMTAgMzkgMTYgNjEgMTYgNzAgMCAxMjgtNTggMTI4LTEyOHMtNTgtMTI4LTEyOC0xMjh6IiBmaWxsPSJ3aGl0ZSIvPjwvc3ZnPg==">
+    <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0iIzAwYTg4NCIvPjxwYXRoIGQ9Ik0yNTYgMTI4Yy03MCAwLTEyOCA1OC0xMjggMTI4IDAgMjIgNiA0MyAxNiA2MWwtMjIgODMgODMtMjJjMTggMTAgMzkgMTYgNjEgMTYgNzAgMCAxMjgtNTggMTI4LTEyOHMtNTgtMTI4LTEyOC0xMjh6IiBmaWxsPSJ3aGl0ZSIvPjwvc3ZnPg==">
+    
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#111b21">
     
+    <!-- PWA Manifest for Android/PC Shortcut -->
+    <link rel="manifest" href='data:application/manifest+json,{"name":"whatsappDIaa","short_name":"whatsappDIaa","start_url":".","display":"standalone","background_color":"%23111b21","theme_color":"%23111b21","icons":[{"src":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0iIzAwYTg4NCIvPjxwYXRoIGQ9Ik0yNTYgMTI4Yy03MCAwLTEyOCA1OC0xMjggMTI4IDAgMjIgNiA0MyAxNiA2MWwtMjIgODMgODMtMjJjMTggMTAgMzkgMTYgNjEgMTYgNzAgMCAxMjgtNTggMTI4LTEyOHMtNTgtMTI4LTEyOC0xMjh6IiBmaWxsPSJ3aGl0ZSIvPjwvc3ZnPg==","sizes":"192x192","type":"image/svg+xml"}]}'>
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
