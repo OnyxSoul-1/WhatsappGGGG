@@ -30,8 +30,8 @@
         
         video { width: 100%; height: 100%; object-fit: cover; background: #000; }
         
-        /* CRYSTAL CLEAR - NO OVERLAY */
-        .chat-bg-overlay { display: none; }
+        /* CRYSTAL CLEAR - NO DARK OVERLAY */
+        .chat-bg-overlay { display: none; } 
         .chat-bg-image { position: absolute; inset: 0; background-size: cover; background-position: center; z-index: -1; }
         
         @keyframes pulse-ring { 0% { transform: scale(0.8); opacity: 0.5; } 100% { transform: scale(2.5); opacity: 0; } }
@@ -301,7 +301,6 @@
         let currentFilterIndex = 0;
         const videoFilters = ['', 'filter-bw', 'filter-sepia', 'filter-invert', 'filter-neon'];
         
-        // Camera variables
         let cameraStream = null;
         let cameraRecorder = null;
         let cameraChunks = [];
@@ -359,11 +358,7 @@
             document.getElementById('profileAvatarPreview').src = myData.avatar;
             document.getElementById('profileModal').classList.remove('hidden');
         }
-
-        function closeProfileEdit() {
-            document.getElementById('profileModal').classList.add('hidden');
-        }
-
+        function closeProfileEdit() { document.getElementById('profileModal').classList.add('hidden'); }
         function updateProfileAvatar(e) {
             const file = e.target.files[0];
             if (file) {
@@ -372,11 +367,9 @@
                 reader.readAsDataURL(file);
             }
         }
-
         function saveProfile() {
             const newName = document.getElementById('profileNameInput').value.trim();
             const newAvatar = document.getElementById('profileAvatarPreview').src;
-            
             if (newName && newAvatar) {
                 myData.username = newName;
                 myData.avatar = newAvatar;
@@ -418,7 +411,6 @@
 
         function openAddModal() { document.getElementById('addModal').classList.remove('hidden'); }
         function closeAddModal() { document.getElementById('addModal').classList.add('hidden'); document.getElementById('addUserInput').value = ''; }
-        
         function searchAndAddUser() {
             const name = document.getElementById('addUserInput').value.trim().toLowerCase();
             if(!name) return;
@@ -524,11 +516,7 @@
                 const btn = document.getElementById('micBtn');
                 btn.classList.add('text-red-500', 'animate-pulse');
                 btn.innerHTML = '<i class="fas fa-stop"></i>';
-            } catch (err) { 
-                console.error("Voice recording error:", err);
-                alert("Microphone access denied!"); 
-                isRecording = false; 
-            }
+            } catch (err) { alert("Microphone access denied!"); isRecording = false; }
         }
 
         function stopRecording() {
@@ -562,104 +550,52 @@
         }
 
         // ==========================================
-        // 6. CAMERA (FIXED)
+        // 6. CAMERA (SNAPCHAT STYLE)
         // ==========================================
         async function openCamera() {
-            console.log("Opening camera...");
             try {
-                // Stop any existing stream
-                if (cameraStream) {
-                    cameraStream.getTracks().forEach(track => track.stop());
-                }
-                
+                if (cameraStream) cameraStream.getTracks().forEach(track => track.stop());
                 cameraStream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { 
-                        facingMode: facingMode,
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 }
-                    }, 
+                    video: { facingMode: facingMode }, 
                     audio: true 
                 });
-                
-                console.log("Camera stream obtained:", cameraStream);
-                const videoElement = document.getElementById('cameraVideo');
-                videoElement.srcObject = cameraStream;
-                
+                document.getElementById('cameraVideo').srcObject = cameraStream;
                 document.getElementById('cameraOverlay').classList.add('active');
-                console.log("Camera overlay shown");
-            } catch (err) {
-                console.error("Camera error:", err);
-                alert("Camera access denied! Please allow camera permissions.");
-            }
+            } catch (err) { alert("Camera access denied!"); }
         }
 
         function closeCamera() {
-            console.log("Closing camera...");
-            if (cameraStream) {
-                cameraStream.getTracks().forEach(track => track.stop());
-                cameraStream = null;
-            }
+            if (cameraStream) { cameraStream.getTracks().forEach(track => track.stop()); cameraStream = null; }
             document.getElementById('cameraOverlay').classList.remove('active');
             document.getElementById('cameraRecordBtn').classList.remove('recording');
         }
 
         function switchCamera() {
-            console.log("Switching camera...");
             facingMode = facingMode === 'user' ? 'environment' : 'user';
-            if (cameraStream) {
-                cameraStream.getTracks().forEach(track => track.stop());
-                openCamera();
-            }
+            if (cameraStream) { cameraStream.getTracks().forEach(track => track.stop()); openCamera(); }
         }
 
         function startCameraRecording() {
-            console.log("Starting camera recording...");
-            if (!cameraStream) {
-                alert("Camera not ready!");
-                return;
-            }
-            
+            if (!cameraStream) return;
             cameraChunks = [];
-            const mediaRecorder = new MediaRecorder(cameraStream, { 
-                mimeType: 'video/webm;codecs=vp9,opus'
-            });
-            
-            mediaRecorder.ondataavailable = e => { 
-                console.log("Data available:", e.data.size);
-                if (e.data.size > 0) cameraChunks.push(e.data); 
-            };
-            
-            mediaRecorder.onstop = sendCameraMedia;
-            mediaRecorder.onerror = (e) => {
-                console.error("Recorder error:", e);
-            };
-            
-            mediaRecorder.start(100); // Collect data every 100ms
-            cameraRecorder = mediaRecorder;
+            const mr = new MediaRecorder(cameraStream, { mimeType: 'video/webm' });
+            mr.ondataavailable = e => { if (e.data.size > 0) cameraChunks.push(e.data); };
+            mr.onstop = sendCameraMedia;
+            mr.start(100);
+            cameraRecorder = mr;
             document.getElementById('cameraRecordBtn').classList.add('recording');
-            console.log("Recording started");
         }
 
         function stopCameraRecording() {
-            console.log("Stopping camera recording...");
             if (cameraRecorder && cameraRecorder.state !== 'inactive') {
                 cameraRecorder.stop();
                 document.getElementById('cameraRecordBtn').classList.remove('recording');
-                console.log("Recording stopped");
             }
         }
 
         function sendCameraMedia() {
-            console.log("Sending camera media, chunks:", cameraChunks.length);
-            if (cameraChunks.length === 0) {
-                console.log("No chunks recorded");
-                closeCamera();
-                return;
-            }
-            
+            if (cameraChunks.length === 0) { closeCamera(); return; }
             const blob = new Blob(cameraChunks, { type: 'video/webm' });
-            console.log("Blob size:", blob.size);
-            
             const reader = new FileReader();
             reader.readAsDataURL(blob);
             reader.onloadend = () => {
@@ -670,26 +606,29 @@
                     time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
                     color: document.getElementById('textColorPicker').value
                 };
-                console.log("Sending video message");
                 socket.emit('send_message', msg);
                 closeCamera();
             };
         }
 
         // ==========================================
-        // 7. VIDEO/VOICE CALLS
+        // 7. VIDEO/VOICE CALLS (FIXED FOR CHROMEBOOK)
         // ==========================================
         async function startCall(type) {
             if (!activeUser) return;
             callType = type;
             try {
+                // SIMPLIFIED CAMERA SETTINGS TO PREVENT BLACK SCREEN
                 localStream = await navigator.mediaDevices.getUserMedia({ 
-                    video: type === 'video' ? { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: "user" } : false, 
+                    video: type === 'video' ? true : false, 
                     audio: true 
                 });
+                
                 const localVideo = document.getElementById('localVideo');
                 localVideo.srcObject = localStream;
+                localVideo.play().catch(e => console.log("Local play error:", e));
                 localVideo.style.display = type === 'video' ? 'block' : 'none';
+                
                 document.getElementById('activeCallUI').classList.remove('hidden');
                 document.getElementById('activeCallName').innerText = activeUser.username;
                 document.getElementById('activeCallAvatar').src = activeUser.avatar;
@@ -697,7 +636,7 @@
                 
                 peer = new SimplePeer({ 
                     initiator: true, trickle: false, stream: localStream,
-                    config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }] }
+                    config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] }
                 });
 
                 peer.on('signal', data => {
@@ -707,15 +646,15 @@
                 peer.on('stream', remoteStream => {
                     const remoteVideo = document.getElementById('remoteVideo');
                     remoteVideo.srcObject = remoteStream;
-                    remoteVideo.play().catch(e => console.error('Video play error:', e));
-                    document.getElementById('callStatus').innerText = type === 'video' ? "Video connected" : "Voice connected";
+                    remoteVideo.play().catch(e => console.log("Remote play error:", e));
+                    document.getElementById('callStatus').innerText = "Connected";
                     document.getElementById('ringtone').pause();
                 });
 
                 document.getElementById('ringtone').play();
             } catch (err) {
-                console.error("Call error:", err);
-                alert("Camera/Mic access denied!");
+                console.error("Call Error:", err);
+                alert("Camera error: " + err.message);
             }
         }
 
@@ -736,17 +675,20 @@
                 document.getElementById('activeCallName').innerText = incomingCaller.name;
                 document.getElementById('ringtone').pause();
 
+                // SIMPLIFIED CAMERA SETTINGS
                 localStream = await navigator.mediaDevices.getUserMedia({ 
-                    video: callType === 'video' ? { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: "user" } : false, 
+                    video: callType === 'video' ? true : false, 
                     audio: true 
                 });
+                
                 const localVideo = document.getElementById('localVideo');
                 localVideo.srcObject = localStream;
+                localVideo.play().catch(e => console.log("Local play error:", e));
                 localVideo.style.display = callType === 'video' ? 'block' : 'none';
 
                 peer = new SimplePeer({ 
                     initiator: false, trickle: false, stream: localStream,
-                    config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }] }
+                    config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] }
                 });
 
                 peer.on('signal', data => {
@@ -756,25 +698,19 @@
                 peer.on('stream', remoteStream => {
                     const remoteVideo = document.getElementById('remoteVideo');
                     remoteVideo.srcObject = remoteStream;
-                    remoteVideo.play().catch(e => console.error('Video play error:', e));
-                    document.getElementById('callStatus').innerText = callType === 'video' ? "Video connected" : "Voice connected";
+                    remoteVideo.play().catch(e => console.log("Remote play error:", e));
+                    document.getElementById('callStatus').innerText = "Connected";
                 });
 
                 peer.signal(incomingSignal);
             } catch (err) {
-                console.error("Accept call error:", err);
-                alert("Camera/Mic access denied!");
+                console.error("Accept Error:", err);
+                alert("Camera error: " + err.message);
             }
         }
 
-        function declineCall() { 
-            document.getElementById('incomingCallUI').classList.add('hidden'); 
-            document.getElementById('ringtone').pause(); 
-        }
-        
-        socket.on('call_accepted', (data) => {
-            if (peer) peer.signal(data.signal);
-        });
+        function declineCall() { document.getElementById('incomingCallUI').classList.add('hidden'); document.getElementById('ringtone').pause(); }
+        socket.on('call_accepted', (data) => { if (peer) peer.signal(data.signal); });
 
         function endCall() {
             document.getElementById('activeCallUI').classList.add('hidden');
@@ -790,18 +726,11 @@
             videoFilters.forEach(f => { if(f) { remoteVideo.classList.remove(f); localVideo.classList.remove(f); }});
         }
 
-        function toggleMute() { 
-            isMuted = !isMuted; 
-            if (localStream) localStream.getAudioTracks()[0].enabled = !isMuted; 
-        }
-        
-        function toggleVideo() { 
-            isVideoOff = !isVideoOff; 
-            if (localStream && callType === 'video') localStream.getVideoTracks()[0].enabled = !isVideoOff; 
-        }
+        function toggleMute() { isMuted = !isMuted; if (localStream) localStream.getAudioTracks()[0].enabled = !isMuted; }
+        function toggleVideo() { isVideoOff = !isVideoOff; if (localStream && callType === 'video') localStream.getVideoTracks()[0].enabled = !isVideoOff; }
 
         // ==========================================
-        // 8. BACKGROUNDS & COLORS
+        // 8. BACKGROUNDS (FIXED FOR VIDEO) & COLORS
         // ==========================================
         function openBgModal() { document.getElementById('bgModal').classList.remove('hidden'); }
         function closeBgModal() { document.getElementById('bgModal').classList.add('hidden'); }
@@ -811,8 +740,12 @@
             if (file) {
                 const reader = new FileReader();
                 reader.onload = (e) => {
-                    applyBackground(e.target.result);
-                    localStorage.setItem('diaa_bg', e.target.result);
+                    const result = e.target.result;
+                    const isVideo = file.type.startsWith('video/');
+                    localStorage.setItem('diaa_bg', result);
+                    localStorage.setItem('diaa_bg_type', isVideo ? 'video' : 'image');
+                    applyBackground(result, isVideo);
+                    closeBgModal();
                 };
                 reader.readAsDataURL(file);
             }
@@ -821,23 +754,43 @@
         function applyBgUrl() {
             const url = document.getElementById('bgUrlInput').value.trim();
             if (url) {
-                applyBackground(url);
+                const isVideo = url.match(/\.(mp4|webm|ogg|mov)(\?|$)/i);
                 localStorage.setItem('diaa_bg', url);
+                localStorage.setItem('diaa_bg_type', isVideo ? 'video' : 'image');
+                applyBackground(url, isVideo);
+                closeBgModal();
             }
         }
 
-        function applyBackground(url) {
-            const layer = document.getElementById('bgImageLayer');
-            layer.style.backgroundImage = `url('${url}')`;
-            closeBgModal();
+        function applyBackground(url, isVideo) {
+            const chatArea = document.getElementById('chatArea');
+            const oldVideo = document.getElementById('bgVideo');
+            if (oldVideo) oldVideo.remove();
+            const imageLayer = document.getElementById('bgImageLayer');
+
+            if (isVideo) {
+                imageLayer.style.backgroundImage = 'none';
+                const video = document.createElement('video');
+                video.id = 'bgVideo';
+                video.src = url;
+                video.autoplay = true;
+                video.loop = true;
+                video.muted = true;
+                video.playsInline = true;
+                video.style.cssText = 'position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:-1;';
+                chatArea.appendChild(video);
+            } else {
+                imageLayer.style.backgroundImage = `url('${url}')`;
+            }
         }
 
         function loadSavedBg() {
             const saved = localStorage.getItem('diaa_bg');
+            const savedType = localStorage.getItem('diaa_bg_type') || 'image';
             if (saved) {
-                document.getElementById('bgImageLayer').style.backgroundImage = `url('${saved}')`;
+                applyBackground(saved, savedType === 'video');
             } else {
-                applyBackground('https://images.unsplash.com/photo-1462331940025-496dfbfc7564?q=80&w=2000&auto=format&fit=crop');
+                applyBackground('https://images.unsplash.com/photo-1462331940025-496dfbfc7564?q=80&w=2000&auto=format&fit=crop', false);
             }
         }
 
