@@ -31,7 +31,7 @@
         video { width: 100%; height: 100%; object-fit: cover; background: #000; }
         
         /* CRYSTAL CLEAR - NO OVERLAY */
-        .chat-bg-overlay { display: none; } /* REMOVED THE DARK OVERLAY */
+        .chat-bg-overlay { display: none; }
         .chat-bg-image { position: absolute; inset: 0; background-size: cover; background-position: center; z-index: -1; }
         
         @keyframes pulse-ring { 0% { transform: scale(0.8); opacity: 0.5; } 100% { transform: scale(2.5); opacity: 0; } }
@@ -56,7 +56,6 @@
             text-shadow: 0 1px 3px rgba(0,0,0,0.8);
         }
         
-        /* SNAPCHAT STYLE VIDEO FILTERS */
         .filter-bw { filter: grayscale(100%); }
         .filter-sepia { filter: sepia(100%); }
         .filter-invert { filter: invert(100%); }
@@ -91,14 +90,14 @@
             background: rgba(0,0,0,0.5); color: white;
             width: 44px; height: 44px; border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            cursor: pointer; font-size: 20px;
+            cursor: pointer; font-size: 20px; z-index: 10000;
         }
         .switch-camera {
             position: absolute; top: 20px; right: 20px;
             background: rgba(0,0,0,0.5); color: white;
             width: 44px; height: 44px; border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            cursor: pointer; font-size: 20px;
+            cursor: pointer; font-size: 20px; z-index: 10000;
         }
     </style>
 </head>
@@ -142,7 +141,6 @@
 
         <div class="flex-1 flex flex-col relative bg-wa_chat_bg" id="chatArea">
             <div id="bgImageLayer" class="chat-bg-image"></div>
-            <!-- OVERLAY REMOVED FOR CRYSTAL CLEAR VIEW -->
 
             <div id="emptyState" class="flex-1 flex flex-col items-center justify-center text-center p-8 relative z-10">
                 <h1 class="text-3xl font-light mb-4">whatsappDIaa Web</h1>
@@ -171,7 +169,7 @@
                         <option value="0.75">Monster</option>
                     </select>
 
-                    <!-- NEW: CAMERA BUTTON -->
+                    <!-- CAMERA BUTTON -->
                     <button onclick="openCamera()" class="text-wa_green text-2xl p-2 cursor-pointer hover:scale-110 transition" title="Take Photo/Video">
                         <i class="fas fa-camera"></i>
                     </button>
@@ -189,7 +187,6 @@
     <div id="addModal" class="hidden fixed inset-0 z-[100] modal-bg flex items-center justify-center p-4">
         <div class="bg-wa_header p-6 rounded-2xl w-full max-w-sm border border-wa_border">
             <h2 class="text-xl font-bold mb-4">Add Family Member</h2>
-            <p class="text-sm text-gray-400 mb-4">Type their exact username to find them.</p>
             <input type="text" id="addUserInput" placeholder="Enter username..." class="w-full bg-wa_input px-4 py-3 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-wa_green">
             <div class="flex gap-3">
                 <button onclick="closeAddModal()" class="flex-1 bg-gray-600 py-2 rounded-lg">Cancel</button>
@@ -385,7 +382,7 @@
                 myData.avatar = newAvatar;
                 localStorage.setItem('diaa_user', JSON.stringify(myData));
                 document.getElementById('myAvatar').src = newAvatar;
-                socket.emit('register_user', myData); // Update on server
+                socket.emit('register_user', myData);
                 closeProfileEdit();
             }
         }
@@ -527,7 +524,11 @@
                 const btn = document.getElementById('micBtn');
                 btn.classList.add('text-red-500', 'animate-pulse');
                 btn.innerHTML = '<i class="fas fa-stop"></i>';
-            } catch (err) { alert("Microphone access denied!"); isRecording = false; }
+            } catch (err) { 
+                console.error("Voice recording error:", err);
+                alert("Microphone access denied!"); 
+                isRecording = false; 
+            }
         }
 
         function stopRecording() {
@@ -561,22 +562,39 @@
         }
 
         // ==========================================
-        // 6. CAMERA (PHOTO/VIDEO)
+        // 6. CAMERA (FIXED)
         // ==========================================
         async function openCamera() {
+            console.log("Opening camera...");
             try {
+                // Stop any existing stream
+                if (cameraStream) {
+                    cameraStream.getTracks().forEach(track => track.stop());
+                }
+                
                 cameraStream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: facingMode }, 
+                    video: { 
+                        facingMode: facingMode,
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    }, 
                     audio: true 
                 });
-                document.getElementById('cameraVideo').srcObject = cameraStream;
+                
+                console.log("Camera stream obtained:", cameraStream);
+                const videoElement = document.getElementById('cameraVideo');
+                videoElement.srcObject = cameraStream;
+                
                 document.getElementById('cameraOverlay').classList.add('active');
+                console.log("Camera overlay shown");
             } catch (err) {
-                alert("Camera access denied!");
+                console.error("Camera error:", err);
+                alert("Camera access denied! Please allow camera permissions.");
             }
         }
 
         function closeCamera() {
+            console.log("Closing camera...");
             if (cameraStream) {
                 cameraStream.getTracks().forEach(track => track.stop());
                 cameraStream = null;
@@ -586,6 +604,7 @@
         }
 
         function switchCamera() {
+            console.log("Switching camera...");
             facingMode = facingMode === 'user' ? 'environment' : 'user';
             if (cameraStream) {
                 cameraStream.getTracks().forEach(track => track.stop());
@@ -594,26 +613,53 @@
         }
 
         function startCameraRecording() {
+            console.log("Starting camera recording...");
+            if (!cameraStream) {
+                alert("Camera not ready!");
+                return;
+            }
+            
             cameraChunks = [];
-            const mediaRecorder = new MediaRecorder(cameraStream, { mimeType: 'video/webm' });
-            mediaRecorder.ondataavailable = e => { if (e.data.size > 0) cameraChunks.push(e.data); };
+            const mediaRecorder = new MediaRecorder(cameraStream, { 
+                mimeType: 'video/webm;codecs=vp9,opus'
+            });
+            
+            mediaRecorder.ondataavailable = e => { 
+                console.log("Data available:", e.data.size);
+                if (e.data.size > 0) cameraChunks.push(e.data); 
+            };
+            
             mediaRecorder.onstop = sendCameraMedia;
-            mediaRecorder.start();
+            mediaRecorder.onerror = (e) => {
+                console.error("Recorder error:", e);
+            };
+            
+            mediaRecorder.start(100); // Collect data every 100ms
             cameraRecorder = mediaRecorder;
             document.getElementById('cameraRecordBtn').classList.add('recording');
+            console.log("Recording started");
         }
 
         function stopCameraRecording() {
+            console.log("Stopping camera recording...");
             if (cameraRecorder && cameraRecorder.state !== 'inactive') {
                 cameraRecorder.stop();
                 document.getElementById('cameraRecordBtn').classList.remove('recording');
+                console.log("Recording stopped");
             }
         }
 
         function sendCameraMedia() {
-            if (cameraChunks.length === 0) return;
+            console.log("Sending camera media, chunks:", cameraChunks.length);
+            if (cameraChunks.length === 0) {
+                console.log("No chunks recorded");
+                closeCamera();
+                return;
+            }
             
             const blob = new Blob(cameraChunks, { type: 'video/webm' });
+            console.log("Blob size:", blob.size);
+            
             const reader = new FileReader();
             reader.readAsDataURL(blob);
             reader.onloadend = () => {
@@ -624,6 +670,7 @@
                     time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
                     color: document.getElementById('textColorPicker').value
                 };
+                console.log("Sending video message");
                 socket.emit('send_message', msg);
                 closeCamera();
             };
@@ -667,6 +714,7 @@
 
                 document.getElementById('ringtone').play();
             } catch (err) {
+                console.error("Call error:", err);
                 alert("Camera/Mic access denied!");
             }
         }
@@ -714,6 +762,7 @@
 
                 peer.signal(incomingSignal);
             } catch (err) {
+                console.error("Accept call error:", err);
                 alert("Camera/Mic access denied!");
             }
         }
