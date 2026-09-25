@@ -11,37 +11,40 @@ const io = new Server(server, {
   cors: { origin: "*", methods: ["GET", "POST"] }
 });
 
-let users = {}; // Stores connected users and their socket IDs
+let users = {}; // Maps socket ID to user data
 
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
 
   // 1. User logs in
   socket.on('register_user', (data) => {
-    users[socket.id] = data; // data = { username, avatar, password }
+    users[socket.id] = data; 
     io.emit('update_user_list', Object.values(users));
   });
 
-  // 2. Real Text & Voice Messages
+  // 2. Text & Voice Messages
   socket.on('send_message', (data) => {
     io.emit('receive_message', data);
   });
 
-  // 3. Real Video/Voice Call Signaling (WebRTC)
+  // 3. Start a Call
   socket.on('call_user', (data) => {
-    const { userToCall, signalData, from, name } = data;
-    // Find the socket ID of the user being called
-    const targetSocketId = Object.keys(users).find(key => users[key].username === userToCall);
-    if (targetSocketId) {
-      io.to(targetSocketId).emit('call_incoming', { signal: signalData, from, name });
+    // Find the socket ID of the person being called
+    const targetId = Object.keys(users).find(id => users[id].username === data.userToCall);
+    if (targetId) {
+      io.to(targetId).emit('incoming_call', { 
+        signal: data.signal, 
+        from: data.from, 
+        name: data.name 
+      });
     }
   });
 
+  // 4. Answer a Call
   socket.on('answer_call', (data) => {
-    const { signal, to } = data;
-    const targetSocketId = Object.keys(users).find(key => users[key].username === to);
-    if (targetSocketId) {
-      io.to(targetSocketId).emit('call_accepted', signal);
+    const targetId = Object.keys(users).find(id => users[id].username === data.to);
+    if (targetId) {
+      io.to(targetId).emit('call_accepted', { signal: data.signal, from: socket.id });
     }
   });
 
@@ -52,4 +55,4 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`Real Server running on port ${PORT}`));
+server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
