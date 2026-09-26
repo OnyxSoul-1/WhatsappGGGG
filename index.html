@@ -1,11 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" dir="ltr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>whatsappDIaa</title>
     
-    <!-- REAL APP ICONS -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0iIzAwYTg4NCIvPjxwYXRoIGQ9Ik0yNTYgMTI4Yy03MCAwLTEyOCA1OC0xMjggMTI4IDAgMjIgNiA0MyAxNiA2MWwtMjIgODMgODMtMjJjMTggMTAgMzkgMTYgNjEgMTYgNzAgMCAxMjgtNTggMTI4LTEyOHMtNTgtMTI4LTEyOC0xMjh6IiBmaWxsPSJ3aGl0ZSIvPjwvc3ZnPg==">
     <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0iIzAwYTg4NCIvPjxwYXRoIGQ9Ik0yNTYgMTI4Yy03MCAwLTEyOCA1OC0xMjggMTI4IDAgMjIgNiA0MyAxNiA2MWwtMjIgODMgODMtMjJjMTggMTAgMzkgMTYgNjEgMTYgNzAgMCAxMjgtNTggMTI4LTEyOHMtNTgtMTI4LTEyOC0xMjh6IiBmaWxsPSJ3aGl0ZSIvPjwvc3ZnPg==">
     
@@ -248,13 +247,16 @@
     <audio id="ringtone" loop></audio>
 
     <script>
-        // FIX 1: Removed trailing slash from URL to fix connection errors
         const SERVER_URL = "https://whatsappgggg.onrender.com"; 
         const FAMILY_SECRET_PASSWORD = "hassan123";
         
-        // FIX 2: Added reconnection options
         const socket = io(SERVER_URL, { reconnection: true, reconnectionAttempts: 10, reconnectionDelay: 1000 });
         
+        // FIX: Re-register user when server wakes up and reconnects
+        socket.on('connect', () => {
+            if (myData) socket.emit('register_user', myData);
+        });
+
         let myData = null, activeUser = null, peer = null, localStream = null;
         let isMuted = false, isVideoOff = false, mediaRecorder = null, audioChunks = [];
         let incomingSignal = null, incomingCaller = null, callType = 'video';
@@ -317,11 +319,10 @@
             const noteBtn = `<div onclick="openNotes()" class="flex items-center p-3 hover:bg-wa_header cursor-pointer border-b border-wa_border transition mb-2 bg-wa_input/30 rounded-lg"><img src="https://img.icons8.com/color/96/edit--v1.png" class="w-12 h-12 rounded-full mr-3"><div><h3 class="font-bold text-wa_green">Note to Self</h3><p class="text-xs text-gray-400">Your private notes</p></div></div>`;
             let html = noteBtn;
             if(usersToRender.length === 0) { html += '<p class="text-center text-gray-500 mt-4 text-sm">No users found. (Server might be waking up)</p>'; }
-            else { usersToRender.forEach(u => { html += `<div class="flex items-center justify-between p-3 hover:bg-wa_header border-b border-wa_border transition"><div class="flex items-center cursor-pointer flex-1" onclick="openChat('${u.username}', '${u.avatar}')"><img src="${u.avatar}" class="w-12 h-12 rounded-full mr-3"><div><h3 class="font-bold">${u.username}</h3><p class="text-xs text-gray-400">Tap to chat</p></div></div><button onclick="blockUser('${u.username}')" class="text-red-500 hover:text-red-400 p-2"><i class="fas fa-user-slash"></i></button></div>`; }); }
+            else { usersToRender.forEach(u => { html += `<div class="flex items-center justify-between p-3 hover:bg-wa_header border-b border-wa_border transition"><div class="flex items-center cursor-pointer flex-1" onclick="openChat('${u.username}', '${u.avatar}')"><img src="${u.avatar}" class="w-12 h-12 rounded-full mr-3"><div><h3 class="font-bold">${u.username}</h3><p class="text-xs text-gray-400">Tap to chat</p></div></div></div>`; }); }
             list.innerHTML = html;
         }
 
-        function blockUser(username) { if(confirm(`Block ${username}?`)) { allUsers = allUsers.filter(u => u.username !== username); renderUserList(allUsers); alert(`${username} blocked!`); } }
         function filterUsers() { const query = document.getElementById('searchUser').value.toLowerCase(); renderUserList(allUsers.filter(u => u.username.toLowerCase().includes(query))); }
         function openAddModal() { document.getElementById('addModal').classList.remove('hidden'); }
         function closeAddModal() { document.getElementById('addModal').classList.add('hidden'); document.getElementById('addUserInput').value = ''; }
@@ -398,7 +399,6 @@
             } event.target.value = '';
         }
 
-        // FIX 3: Added safety check for activeUser to prevent crash
         socket.on('receive_message', (msg) => {
             if (!activeUser || activeUser.isNote) return; 
             if ((msg.to === myData.username || msg.from === myData.username) && (msg.from === activeUser.username || msg.to === activeUser.username)) {
