@@ -1,3 +1,5 @@
+<!DOCTYPE html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -62,8 +64,6 @@
         .filter-sepia { filter: sepia(100%); }
         .filter-invert { filter: invert(100%); }
         .filter-neon { filter: hue-rotate(180deg) saturate(200%); }
-        .filter-blur { filter: blur(3px); }
-        .filter-sharpen { filter: contrast(150%); }
         .filter-vintage { filter: sepia(50%) hue-rotate(330deg) saturate(140%); }
         .filter-cool { filter: hue-rotate(180deg) saturate(150%); }
         .filter-warm { filter: sepia(30%) saturate(140%); }
@@ -252,13 +252,13 @@
                 <button onclick="saveRingtoneUrl()" class="w-full bg-wa_green py-1 rounded text-sm font-bold text-white">Save Ringtone</button>
             </div>
 
-            <!-- Existing Save/Cancel Buttons -->
+            <!-- Save/Cancel Buttons -->
             <div class="flex gap-3 mb-4">
                 <button onclick="closeProfileEdit()" class="flex-1 bg-gray-600 py-2 rounded-lg">Cancel</button>
                 <button onclick="saveProfile()" class="flex-1 bg-wa_green py-2 rounded-lg font-bold">Save Changes</button>
             </div>
 
-            <!-- NEW: Account Management Section -->
+            <!-- Account Management Section -->
             <div class="border-t border-wa_border pt-4 flex flex-col gap-3">
                 <button onclick="logoutAccount()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-bold transition">
                     <i class="fas fa-sign-out-alt mr-2"></i> Logout
@@ -321,7 +321,7 @@
 
     <script>
         const SERVER_URL = "https://whatsappgggg.onrender.com/";
-        const FAMILY_SECRET_PASSWORD = "HASSAN123";
+        const FAMILY_SECRET_PASSWORD = "hassan123";
         
         const socket = io(SERVER_URL);
         let myData = null;
@@ -472,7 +472,6 @@
 
         function renderUserList(usersToRender) {
             const list = document.getElementById('userList');
-            // Keep the Note to Self button
             const noteBtn = `<div onclick="openNotes()" class="flex items-center p-3 hover:bg-wa_header cursor-pointer border-b border-wa_border transition mb-2 bg-wa_input/30 rounded-lg">
                     <img src="https://img.icons8.com/color/96/edit--v1.png" class="w-12 h-12 rounded-full mr-3">
                     <div><h3 class="font-bold text-wa_green">Note to Self</h3><p class="text-xs text-gray-400">Your private notes</p></div>
@@ -533,10 +532,11 @@
             document.getElementById('chatName').innerText = 'Note to Self';
             document.getElementById('chatAvatar').src = 'https://img.icons8.com/color/96/edit--v1.png';
             
-            // Hide call and camera buttons for notes
             document.getElementById('callVideoBtn').style.display = 'none';
             document.getElementById('callVoiceBtn').style.display = 'none';
             document.getElementById('cameraBtn').style.display = 'none';
+            document.getElementById('micBtn').style.display = 'none';
+            document.getElementById('fileInput').parentElement.querySelector('button').style.display = 'none';
 
             loadNotes();
 
@@ -586,10 +586,11 @@
             document.getElementById('messagesArea').innerHTML = '';
             sentMessages.clear();
 
-            // Show call and camera buttons for normal chats
             document.getElementById('callVideoBtn').style.display = 'block';
             document.getElementById('callVoiceBtn').style.display = 'block';
             document.getElementById('cameraBtn').style.display = 'block';
+            document.getElementById('micBtn').style.display = 'block';
+            document.getElementById('fileInput').parentElement.querySelector('button').style.display = 'block';
 
             if (window.innerWidth < 768) {
                 document.getElementById('sidebar').style.display = 'none';
@@ -791,6 +792,7 @@
             };
         }
 
+        // CALL LOGIC WITH 15-SECOND TIMEOUT FIX
         async function startCall(type) {
             if (!activeUser || activeUser.isNote) return;
             callType = type;
@@ -803,15 +805,40 @@
                 localVideo.srcObject = localStream;
                 localVideo.play().catch(e => setTimeout(() => localVideo.play(), 500));
                 localVideo.style.display = type === 'video' ? 'block' : 'none';
-                localVideo.style.opacity = '1'; 
                 
                 document.getElementById('activeCallUI').classList.remove('hidden');
                 document.getElementById('activeCallName').innerText = activeUser.username;
                 document.getElementById('activeCallAvatar').src = activeUser.avatar;
-                document.getElementById('callStatus').innerText = type === 'video' ? "Video calling..." : "Voice calling...";
-                peer = new SimplePeer({ initiator: true, trickle: false, stream: localStream, config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] } });
+                document.getElementById('callStatus').innerText = "Connecting... (Max 15s)";
+                
+                peer = new SimplePeer({ 
+                    initiator: true, trickle: false, stream: localStream, 
+                    config: { iceServers: [ 
+                        { urls: 'stun:stun.l.google.com:19302' },
+                        { urls: 'stun:stun1.l.google.com:19302' },
+                        { urls: 'stun:stun2.l.google.com:19302' },
+                        { urls: 'stun:stun3.l.google.com:19302' }
+                    ] } 
+                });
+
+                const timeout = setTimeout(() => {
+                    if (document.getElementById('callStatus').innerText !== "Connected") {
+                        alert("Connection timed out! School Wi-Fi blocks calls. Please try using Mobile Data (4G/5G).");
+                        endCall();
+                    }
+                }, 15000);
+
                 peer.on('signal', data => { socket.emit('call_user', { userToCall: activeUser.username, signal: data, from: myData.username, name: myData.username, type: type }); });
-                peer.on('stream', remoteStream => { const remoteVideo = document.getElementById('remoteVideo'); remoteVideo.srcObject = remoteStream; remoteVideo.play().catch(e => console.log("Remote play error:", e)); document.getElementById('callStatus').innerText = "Connected"; });
+                peer.on('connect', () => { clearTimeout(timeout); });
+                peer.on('stream', remoteStream => { 
+                    clearTimeout(timeout);
+                    const remoteVideo = document.getElementById('remoteVideo'); 
+                    remoteVideo.srcObject = remoteStream; 
+                    remoteVideo.play().catch(e => console.log("Remote play error:", e)); 
+                    document.getElementById('callStatus').innerText = "Connected"; 
+                });
+                peer.on('error', err => { clearTimeout(timeout); alert("Call failed: " + err.message); endCall(); });
+
             } catch (err) { console.error("Call Error:", err); alert("Camera error: " + err.message); }
         }
 
@@ -822,7 +849,7 @@
             document.getElementById('incomingName').innerText = `${data.name} is calling...`;
             document.getElementById('incomingCallType').innerText = callType === 'video' ? 'Video Call' : 'Voice Call';
             document.getElementById('incomingCallUI').classList.remove('hidden');
-            document.getElementById('ringtone').play();
+            document.getElementById('ringtone').play(); // ONLY plays on incoming
         });
 
         async function acceptCall() {
@@ -831,14 +858,41 @@
                 document.getElementById('activeCallUI').classList.remove('hidden');
                 document.getElementById('activeCallName').innerText = incomingCaller.name;
                 document.getElementById('ringtone').pause();
+                document.getElementById('callStatus').innerText = "Connecting... (Max 15s)";
+
                 localStream = await navigator.mediaDevices.getUserMedia({ video: callType === 'video' ? true : false, audio: true });
                 const localVideo = document.getElementById('localVideo');
                 localVideo.srcObject = localStream;
                 localVideo.play().catch(e => console.log("Local play error:", e));
                 localVideo.style.display = callType === 'video' ? 'block' : 'none';
-                peer = new SimplePeer({ initiator: false, trickle: false, stream: localStream, config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] } });
+
+                peer = new SimplePeer({ 
+                    initiator: false, trickle: false, stream: localStream,
+                    config: { iceServers: [ 
+                        { urls: 'stun:stun.l.google.com:19302' },
+                        { urls: 'stun:stun1.l.google.com:19302' },
+                        { urls: 'stun:stun2.l.google.com:19302' }
+                    ] }
+                });
+
+                const timeout = setTimeout(() => {
+                    if (document.getElementById('callStatus').innerText !== "Connected") {
+                        alert("Connection timed out! Please try using Mobile Data (4G/5G).");
+                        endCall();
+                    }
+                }, 15000);
+
                 peer.on('signal', data => { socket.emit('answer_call', { signal: data, to: incomingCaller.username }); });
-                peer.on('stream', remoteStream => { const remoteVideo = document.getElementById('remoteVideo'); remoteVideo.srcObject = remoteStream; remoteVideo.play().catch(e => console.log("Remote play error:", e)); document.getElementById('callStatus').innerText = "Connected"; });
+                peer.on('connect', () => { clearTimeout(timeout); });
+                peer.on('stream', remoteStream => { 
+                    clearTimeout(timeout);
+                    const remoteVideo = document.getElementById('remoteVideo'); 
+                    remoteVideo.srcObject = remoteStream; 
+                    remoteVideo.play().catch(e => console.log("Remote play error:", e)); 
+                    document.getElementById('callStatus').innerText = "Connected"; 
+                });
+                peer.on('error', err => { clearTimeout(timeout); alert("Call failed: " + err.message); endCall(); });
+
                 peer.signal(incomingSignal);
             } catch (err) { console.error("Accept Error:", err); alert("Camera error: " + err.message); }
         }
