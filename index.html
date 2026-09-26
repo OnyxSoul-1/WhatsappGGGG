@@ -4,32 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>whatsappDIaa</title>
-    
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0iIzAwYTg4NCIvPjxwYXRoIGQ9Ik0yNTYgMTI4Yy03MCAwLTEyOCA1OC0xMjggMTI4IDAgMjIgNiA0MyAxNiA2MWwtMjIgODMgODMtMjJjMTggMTAgMzkgMTYgNjEgMTYgNzAgMCAxMjgtNTggMTI4LTEyOHMtNTgtMTI4LTEyOC0xMjh6IiBmaWxsPSJ3aGl0ZSIvPjwvc3ZnPg==">
-    <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0iIzAwYTg4NCIvPjxwYXRoIGQ9Ik0yNTYgMTI4Yy03MCAwLTEyOCA1OC0xMjggMTI4IDAgMjIgNiA0MyAxNiA2MWwtMjIgODMgODMtMjJjMTggMTAgMzkgMTYgNjEgMTYgNzAgMCAxMjgtNTggMTI4LTEyOHMtNTgtMTI4LTEyOC0xMjh6IiBmaWxsPSJ3aGl0ZSIvPjwvc3ZnPg==">
-    
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#111b21">
-    
-    <link rel="manifest" href='data:application/manifest+json,{"name":"whatsappDIaa","short_name":"whatsappDIaa","start_url":".","display":"standalone","background_color":"%23111b21","theme_color":"%23111b21","icons":[{"src":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0iIzAwYTg4NCIvPjxwYXRoIGQ9Ik0yNTYgMTI4Yy03MCAwLTEyOCA1OC0xMjggMTI4IDAgMjIgNiA0MyAxNiA2MWwtMjIgODMgODMtMjJjMTggMTAgMzkgMTYgNjEgMTYgNzAgMCAxMjgtNTggMTI4LTEyOHMtNTgtMTI4LTEyOC0xMjh6IiBmaWxsPSJ3aGl0ZSIvPjwvc3ZnPg==","sizes":"192x192","type":"image/svg+xml"}]}'>
-
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/simple-peer@9.11.1/simplepeer.min.js"></script>
-    
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        wa_bg: '#111b21', wa_header: '#202c33', wa_input: '#2a3942',
-                        wa_green: '#00a884', wa_border: '#222d34'
-                    }
-                }
-            }
-        }
-    </script>
+    <script>tailwind.config = { theme: { extend: { colors: { wa_bg: '#111b21', wa_header: '#202c33', wa_input: '#2a3942', wa_green: '#00a884', wa_border: '#222d34' } } } }</script>
     <style>
         body { background-color: #0b141a; color: #e9edef; font-family: sans-serif; -webkit-tap-highlight-color: transparent; }
         ::-webkit-scrollbar { width: 5px; } ::-webkit-scrollbar-thumb { background: #374151; }
@@ -63,9 +45,7 @@
     </style>
 </head>
 <body class="h-screen w-screen overflow-hidden flex items-center justify-center">
-
     <div id="bootScreen"><div class="boot-spinner mb-4"></div><h1 class="text-2xl font-bold text-wa_green">whatsappDIaa</h1><p class="text-gray-400 text-sm mt-2">Loading...</p></div>
-
     <div id="loginScreen" class="hidden fixed inset-0 z-50 bg-wa_bg flex items-center justify-center p-4">
         <div class="bg-wa_header p-6 rounded-2xl shadow-2xl w-full max-w-sm border border-wa_border">
             <h1 class="text-2xl font-bold text-wa_green mb-4 text-center">whatsappDIaa</h1>
@@ -82,7 +62,6 @@
             <p id="loginError" class="text-red-500 text-center text-sm mt-3 hidden">Wrong password or missing info!</p>
         </div>
     </div>
-
     <div id="mainApp" class="hidden w-full h-full max-w-[1600px] mx-auto bg-wa_bg shadow-2xl flex overflow-hidden relative">
         <div id="sidebar" class="w-full md:w-[350px] flex-shrink-0 flex flex-col border-r border-wa_border bg-wa_bg h-full z-10">
             <div class="bg-wa_header px-4 py-3 flex justify-between items-center">
@@ -102,7 +81,6 @@
                 </div>
             </div>
         </div>
-
         <div id="chatArea" class="flex-1 flex flex-col relative h-full hidden md:flex bg-wa_bg">
             <div id="bgImageLayer" class="chat-bg-image"></div>
             <video id="bgVideo" class="chat-bg-video hidden" autoplay loop muted playsinline></video>
@@ -138,7 +116,6 @@
             </div>
         </div>
     </div>
-
     <div id="addModal" class="hidden fixed inset-0 z-[100] modal-bg flex items-center justify-center p-4">
         <div class="bg-wa_header p-6 rounded-2xl w-full max-w-sm border border-wa_border">
             <h2 class="text-xl font-bold mb-4">Add Family Member</h2>
@@ -149,7 +126,6 @@
             </div>
         </div>
     </div>
-
     <div id="bgModal" class="hidden fixed inset-0 z-[100] modal-bg flex items-center justify-center p-4">
         <div class="bg-wa_header p-6 rounded-2xl w-full max-w-sm border border-wa_border">
             <h2 class="text-xl font-bold mb-4">Change Chat Background</h2>
@@ -167,7 +143,6 @@
             </div>
         </div>
     </div>
-
     <div id="profileModal" class="hidden fixed inset-0 z-[100] modal-bg flex items-center justify-center p-4">
         <div class="bg-wa_header p-6 rounded-2xl w-full max-w-sm border border-wa_border max-h-[90vh] overflow-y-auto">
             <h2 class="text-xl font-bold mb-4">Edit Profile</h2>
@@ -199,7 +174,6 @@
             </div>
         </div>
     </div>
-
     <div id="cameraOverlay" class="camera-overlay">
         <div class="close-camera" onclick="closeCamera()"><i class="fas fa-times"></i></div>
         <div class="switch-camera" onclick="switchCamera()"><i class="fas fa-sync-alt"></i></div>
@@ -216,7 +190,6 @@
             <div class="record-btn" id="cameraRecordBtn" onmousedown="startCameraRecording()" onmouseup="stopCameraRecording()" ontouchstart="startCameraRecording()" ontouchend="stopCameraRecording()"></div>
         </div>
     </div>
-
     <div id="incomingCallUI" class="hidden fixed inset-0 z-[100] bg-[#0b141a] flex flex-col items-center justify-center text-white">
         <div class="relative mb-8"><div class="absolute inset-0 bg-wa_green rounded-full pulse-ring"></div><img id="incomingAvatar" src="" class="relative w-32 h-32 rounded-full object-cover border-4 border-wa_bg z-10"></div>
         <h2 id="incomingName" class="text-3xl font-light mb-2">Incoming Call...</h2>
@@ -226,7 +199,6 @@
             <button onclick="acceptCall()" class="bg-wa_green w-16 h-16 rounded-full flex items-center justify-center text-2xl"><i class="fas fa-phone"></i></button>
         </div>
     </div>
-
     <div id="activeCallUI" class="hidden fixed inset-0 z-[100] bg-black flex flex-col">
         <video id="remoteVideo" autoplay playsinline class="absolute inset-0 w-full h-full"></video>
         <video id="localVideo" autoplay playsinline muted class="absolute bottom-20 right-4 w-32 h-48 rounded-lg border-2 border-white z-10 bg-gray-800"></video>
@@ -243,19 +215,12 @@
             <button onclick="toggleVideo()" class="bg-gray-700 p-4 rounded-full text-xl"><i class="fas fa-video"></i></button>
         </div>
     </div>
-
     <audio id="ringtone" loop></audio>
-
     <script>
         const SERVER_URL = "https://whatsappgggg.onrender.com"; 
         const FAMILY_SECRET_PASSWORD = "hassan123";
-        
         const socket = io(SERVER_URL, { reconnection: true, reconnectionAttempts: 10, reconnectionDelay: 1000 });
-        
-        socket.on('connect', () => {
-            if (myData) socket.emit('register_user', myData);
-        });
-
+        socket.on('connect', () => { if (myData) socket.emit('register_user', myData); });
         let myData = null, activeUser = null, peer = null, localStream = null;
         let isMuted = false, isVideoOff = false, mediaRecorder = null, audioChunks = [];
         let incomingSignal = null, incomingCaller = null, callType = 'video';
@@ -288,7 +253,6 @@
             } else { document.getElementById('loginError').classList.remove('hidden'); }
         }
         function showApp() { socket.emit('register_user', myData); document.getElementById('loginScreen').classList.add('hidden'); document.getElementById('mainApp').classList.remove('hidden'); document.getElementById('myAvatar').src = myData.avatar; }
-        
         function openProfileEdit() { document.getElementById('profileNameInput').value = myData.username; document.getElementById('profileAvatarPreview').src = myData.avatar; document.getElementById('profileModal').classList.remove('hidden'); }
         function closeProfileEdit() { document.getElementById('profileModal').classList.add('hidden'); }
         function updateProfileAvatar(e) { const file = e.target.files[0]; if (file) { const reader = new FileReader(); reader.onload = (ev) => document.getElementById('profileAvatarPreview').src = ev.target.result; reader.readAsDataURL(file); } }
@@ -303,16 +267,12 @@
                 closeProfileEdit();
             }
         }
-
         function logoutAccount() { if(confirm("Logout?")) { localStorage.removeItem('diaa_user'); location.reload(); } }
         function deleteAccount() { if(confirm("Delete account?")) { if(confirm("Really sure?")) { localStorage.clear(); location.reload(); } } }
-
         function uploadRingtone(e) { const file = e.target.files[0]; if (file) { const reader = new FileReader(); reader.onload = (ev) => { localStorage.setItem('diaa_ringtone', ev.target.result); document.getElementById('ringtone').src = ev.target.result; alert("Ringtone uploaded!"); }; reader.readAsDataURL(file); } }
         function setRingtone(url) { document.getElementById('ringtoneUrlInput').value = url; document.getElementById('ringtone').src = url; document.getElementById('ringtone').play().then(() => { setTimeout(() => { const a = document.getElementById('ringtone'); a.pause(); a.currentTime = 0; }, 2000); }).catch(e => {}); }
         function saveRingtoneUrl() { const url = document.getElementById('ringtoneUrlInput').value.trim(); if (url && url !== 'Uploaded file') { localStorage.setItem('diaa_ringtone', url); document.getElementById('ringtone').src = url; alert("Ringtone saved!"); } }
-
         socket.on('update_user_list', (users) => { allUsers = users.filter(u => u.username !== myData.username); renderUserList(allUsers); });
-
         function renderUserList(usersToRender) {
             const list = document.getElementById('userList');
             const noteBtn = `<div onclick="openNotes()" class="flex items-center p-3 hover:bg-wa_header cursor-pointer border-b border-wa_border transition mb-2 bg-wa_input/30 rounded-lg"><img src="https://img.icons8.com/color/96/edit--v1.png" class="w-12 h-12 rounded-full mr-3"><div><h3 class="font-bold text-wa_green">Note to Self</h3><p class="text-xs text-gray-400">Your private notes</p></div></div>`;
@@ -321,12 +281,10 @@
             else { usersToRender.forEach(u => { html += `<div class="flex items-center justify-between p-3 hover:bg-wa_header border-b border-wa_border transition"><div class="flex items-center cursor-pointer flex-1" onclick="openChat('${u.username}', '${u.avatar}')"><img src="${u.avatar}" class="w-12 h-12 rounded-full mr-3"><div><h3 class="font-bold">${u.username}</h3><p class="text-xs text-gray-400">Tap to chat</p></div></div></div>`; }); }
             list.innerHTML = html;
         }
-
         function filterUsers() { const query = document.getElementById('searchUser').value.toLowerCase(); renderUserList(allUsers.filter(u => u.username.toLowerCase().includes(query))); }
         function openAddModal() { document.getElementById('addModal').classList.remove('hidden'); }
         function closeAddModal() { document.getElementById('addModal').classList.add('hidden'); document.getElementById('addUserInput').value = ''; }
         function searchAndAddUser() { const name = document.getElementById('addUserInput').value.trim().toLowerCase(); if(!name) return; document.getElementById('searchUser').value = name; filterUsers(); closeAddModal(); }
-
         function openNotes() {
             activeUser = { username: 'Note to Self', avatar: 'https://img.icons8.com/color/96/edit--v1.png', isNote: true };
             document.getElementById('emptyState').classList.add('hidden');
@@ -341,7 +299,6 @@
             loadNotes();
             if (window.innerWidth < 768) { document.getElementById('sidebar').style.display = 'none'; document.getElementById('chatArea').style.display = 'flex'; }
         }
-
         function loadNotes() {
             const area = document.getElementById('messagesArea'); area.innerHTML = '';
             const notes = JSON.parse(localStorage.getItem('diaa_notes') || '[]');
@@ -353,7 +310,6 @@
         }
         function saveNote(msg) { const notes = JSON.parse(localStorage.getItem('diaa_notes') || '[]'); notes.push(msg); localStorage.setItem('diaa_notes', JSON.stringify(notes)); }
         function deleteNote(id, btn) { let notes = JSON.parse(localStorage.getItem('diaa_notes') || '[]'); notes = notes.filter(n => n.id !== id); localStorage.setItem('diaa_notes', JSON.stringify(notes)); btn.closest('.message-wrapper').remove(); }
-
         function openChat(username, avatar) {
             activeUser = { username, avatar, isNote: false };
             document.getElementById('emptyState').classList.add('hidden');
@@ -369,9 +325,7 @@
             document.getElementById('fileInput').parentElement.querySelector('button').style.display = 'block';
             if (window.innerWidth < 768) { document.getElementById('sidebar').style.display = 'none'; document.getElementById('chatArea').style.display = 'flex'; }
         }
-
         function goBack() { if (window.innerWidth < 768) { document.getElementById('chatArea').style.display = 'none'; document.getElementById('sidebar').style.display = 'flex'; } document.getElementById('activeChatUI').classList.add('hidden'); document.getElementById('emptyState').classList.remove('hidden'); }
-
         function sendText() {
             const input = document.getElementById('msgInput'); const text = input.value.trim();
             if (text && activeUser) {
@@ -382,7 +336,6 @@
                 input.value = '';
             }
         }
-
         function sendFile(event) {
             const file = event.target.files[0];
             if (file && activeUser && !activeUser.isNote) {
@@ -397,14 +350,12 @@
                 }; reader.readAsDataURL(file);
             } event.target.value = '';
         }
-
         socket.on('receive_message', (msg) => {
             if (!activeUser || activeUser.isNote) return; 
             if ((msg.to === myData.username || msg.from === myData.username) && (msg.from === activeUser.username || msg.to === activeUser.username)) {
                 if (!sentMessages.has(msg.id)) { appendMessage(msg); sentMessages.add(msg.id); }
             }
         });
-
         function appendMessage(msg) {
             const area = document.getElementById('messagesArea');
             const isMe = msg.from === myData.username;
@@ -421,10 +372,8 @@
             wrapper.innerHTML = `<div class="${bubbleClass} text-white px-3 py-2 rounded-lg shadow text-sm relative group"><div class="message-text" style="color: ${textColor}">${content}</div><div class="flex justify-between items-center mt-1 gap-2"><span class="text-[10px] text-gray-300">${msg.time}</span>${isMe ? `<button onclick="deleteMessage('${msg.id}', this)" class="message-actions text-[10px] text-red-400 hover:text-red-300"><i class="fas fa-trash"></i></button>` : ''}</div></div>`;
             area.appendChild(wrapper); area.scrollTop = area.scrollHeight;
         }
-
         function deleteMessage(msgId, btnElement) { btnElement.closest('.message-wrapper').remove(); socket.emit('delete_message', { id: msgId, from: myData.username }); }
         socket.on('message_deleted', (data) => { document.querySelectorAll('.message-wrapper').forEach(msgEl => { if (msgEl.innerHTML.includes(`'${data.id}'`)) msgEl.remove(); }); });
-
         async function startRecording() {
             if (isRecording || (activeUser && activeUser.isNote)) return;
             try {
@@ -446,7 +395,6 @@
                 socket.emit('send_message', msg); appendMessage(msg); audioChunks = [];
             };
         }
-
         async function openCamera() {
             if (activeUser && activeUser.isNote) return;
             try {
@@ -471,7 +419,7 @@
                 socket.emit('send_message', msg); appendMessage(msg); closeCamera();
             };
         }
-
+        
         // ==========================================
         // FIXED CALL LOGIC (TRICKLE FALSE + CHROMEBOOK FIX)
         // ==========================================
@@ -481,14 +429,10 @@
             try {
                 // FIX: Use 'video: true' instead of facingMode to fix Chromebook camera blocks
                 localStream = await navigator.mediaDevices.getUserMedia({ video: type === 'video' ? true : false, audio: true });
-                
                 const localVideo = document.getElementById('localVideo'); 
                 localVideo.srcObject = localStream; 
-                
-                // FIX: Force video to play and show
                 localVideo.style.display = 'block';
                 localVideo.play().catch(e => console.log("Play error:", e));
-                
                 document.getElementById('activeCallUI').classList.remove('hidden'); 
                 document.getElementById('activeCallName').innerText = activeUser.username; 
                 document.getElementById('activeCallAvatar').src = activeUser.avatar; 
@@ -510,12 +454,9 @@
                 }, 15000);
 
                 peer.on('signal', data => { 
-                    // FIX: Force lowercase to ensure server finds the user
                     socket.emit('call_user', { userToCall: activeUser.username.toLowerCase(), signal: data, from: myData.username, name: myData.username, type: type }); 
                 });
-                
                 peer.on('connect', () => { clearTimeout(timeout); });
-                
                 peer.on('stream', remoteStream => { 
                     clearTimeout(timeout); 
                     const remoteVideo = document.getElementById('remoteVideo'); 
@@ -524,14 +465,12 @@
                     remoteVideo.play().catch(e => console.log("Remote play error:", e)); 
                     document.getElementById('callStatus').innerText = "Connected"; 
                 });
-
                 peer.on('error', err => { 
                     clearTimeout(timeout); 
                     console.error("Peer Error:", err);
                     alert("Call failed: " + err.message); 
                     endCall(); 
                 });
-
             } catch (err) { 
                 console.error("Call Error:", err); 
                 alert("Camera/Mic error: " + err.message); 
@@ -542,13 +481,9 @@
             incomingSignal = data.signal; 
             incomingCaller = { username: data.from, name: data.name }; 
             callType = data.type || 'video'; 
-            
-            // SHOW THE INCOMING UI
             document.getElementById('incomingName').innerText = `${data.name} is calling...`; 
             document.getElementById('incomingCallType').innerText = callType === 'video' ? 'Video Call' : 'Voice Call'; 
             document.getElementById('incomingCallUI').classList.remove('hidden'); 
-            
-            // PLAY RINGTONE
             document.getElementById('ringtone').play().catch(e => console.log("Ringtone blocked")); 
         });
 
@@ -559,10 +494,7 @@
                 document.getElementById('activeCallName').innerText = incomingCaller.name; 
                 document.getElementById('ringtone').pause(); 
                 document.getElementById('callStatus').innerText = "Connecting...";
-                
-                // FIX: Use 'video: true' for Chromebook
                 localStream = await navigator.mediaDevices.getUserMedia({ video: callType === 'video' ? true : false, audio: true });
-                
                 const localVideo = document.getElementById('localVideo'); 
                 localVideo.srcObject = localStream; 
                 localVideo.style.display = 'block';
@@ -586,9 +518,7 @@
                 peer.on('signal', data => { 
                     socket.emit('answer_call', { signal: data, to: incomingCaller.username.toLowerCase() }); 
                 });
-                
                 peer.on('connect', () => { clearTimeout(timeout); });
-                
                 peer.on('stream', remoteStream => { 
                     clearTimeout(timeout); 
                     const remoteVideo = document.getElementById('remoteVideo'); 
@@ -597,13 +527,11 @@
                     remoteVideo.play().catch(e => console.log("Remote play error:", e)); 
                     document.getElementById('callStatus').innerText = "Connected"; 
                 });
-
                 peer.on('error', err => { 
                     clearTimeout(timeout); 
                     alert("Call failed: " + err.message); 
                     endCall(); 
                 });
-
                 peer.signal(incomingSignal);
             } catch (err) { 
                 alert("Camera error: " + err.message); 
@@ -615,7 +543,6 @@
         function endCall() { document.getElementById('activeCallUI').classList.add('hidden'); document.getElementById('incomingCallUI').classList.add('hidden'); document.getElementById('ringtone').pause(); if (peer) { peer.destroy(); peer = null; } if (localStream) { localStream.getTracks().forEach(track => track.stop()); localStream = null; } document.getElementById('remoteVideo').srcObject = null; document.getElementById('localVideo').srcObject = null; }
         function toggleMute() { isMuted = !isMuted; if (localStream) localStream.getAudioTracks()[0].enabled = !isMuted; }
         function toggleVideo() { isVideoOff = !isVideoOff; if (localStream && callType === 'video') localStream.getVideoTracks()[0].enabled = !isVideoOff; }
-
         function openBgModal() { document.getElementById('bgModal').classList.remove('hidden'); } function closeBgModal() { document.getElementById('bgModal').classList.add('hidden'); }
         function uploadBg(event) { const file = event.target.files[0]; if (file) { const reader = new FileReader(); reader.onload = (e) => { const result = e.target.result; const isVideo = file.type.startsWith('video/'); localStorage.setItem('diaa_bg', result); localStorage.setItem('diaa_bg_type', isVideo ? 'video' : 'image'); applyBackground(result, isVideo); closeBgModal(); }; reader.readAsDataURL(file); } }
         function applyBgUrl() { const url = document.getElementById('bgUrlInput').value.trim(); if (url) { const isVideo = url.match(/\.(mp4|webm|ogg|mov)(\?|$)/i); localStorage.setItem('diaa_bg', url); localStorage.setItem('diaa_bg_type', isVideo ? 'video' : 'image'); applyBackground(url, isVideo); closeBgModal(); } }
