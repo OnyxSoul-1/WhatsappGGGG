@@ -109,6 +109,32 @@ input[type=color]{width:28px;height:28px;border:0;padding:0;background:none;bord
 #stkg button{background:none;border:0;font-size:26px;cursor:pointer;border-radius:10px;padding:4px}#stkg button:hover{background:var(--gl)}
 #emo{display:flex;justify-content:center;gap:2px;margin-bottom:12px}
 #csub{font-size:12px;color:var(--mut)}
+.lc{display:block;text-decoration:none;color:inherit;background:rgba(255,255,255,.08);border:1px solid var(--bd);border-radius:12px;overflow:hidden;margin-top:6px;max-width:260px}
+.lci{width:100%;display:block;aspect-ratio:16/9;object-fit:cover}
+.lcb{padding:8px 10px}.lcs{font-size:11px;color:var(--g);display:flex;align-items:center;gap:5px;font-weight:700}.lcs .i{width:13px;height:13px}
+.lct{font-size:13px;margin-top:2px;word-break:break-word}
+.m a.u{color:#7dd3fc;word-break:break-all}
+.gm img{max-width:240px;display:block;border-radius:12px}
+#gg{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;max-height:50vh;overflow-y:auto;margin-bottom:8px}
+#gg img{width:100%;border-radius:10px;cursor:pointer;display:block}
+.btn.mb{background:var(--gl);color:var(--t);box-shadow:none;margin-bottom:8px}
+#set .card{max-height:90vh;overflow-y:auto}
+#pinbar{display:flex;align-items:center;gap:8px;padding:6px 14px;background:rgba(255,255,255,.07);border-left:3px solid var(--v);font-size:13px;cursor:pointer}
+#pinbar span{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.poll b{display:block;margin-bottom:2px}
+.po{display:block;width:100%;margin-top:6px;text-align:left;border:1px solid var(--bd);border-radius:10px;padding:8px 10px;color:inherit;background:linear-gradient(90deg,#00f0c855 var(--w),var(--gl) var(--w));cursor:pointer;font-size:14px}
+.po.on{border-color:var(--g)}
+.sw{width:28px;height:28px;border-radius:50%;border:2px solid var(--bd);cursor:pointer;padding:0}
+body.light{--t:#10192e;--mut:#5b6785;--gl:rgba(0,0,0,.05);--bd:rgba(0,0,0,.12);background:radial-gradient(60% 50% at 15% 10%,#c7d2fe88,transparent),radial-gradient(50% 50% at 90% 90%,#99f6e444,transparent),#eef2fb}
+body.light #app{background:rgba(255,255,255,.7)}
+body.light .bar,body.light #foot,body.light #more,body.light #rbar,body.light #sbar{background:rgba(255,255,255,.8)!important}
+body.light .th{background:rgba(255,255,255,.92)}
+body.light .m{color:var(--t)!important}
+body.light .card,body.light #ins{background:rgba(255,255,255,.96);color:var(--t)}
+body.light #login{background:#eef2fbcc}
+body.light .av{box-shadow:0 0 0 2px #fff,0 0 0 4px var(--v)}
+body.light .chip{background:rgba(0,0,0,.07);color:var(--t)}body.light .chip.on{background:linear-gradient(135deg,var(--g),var(--v));color:#06101c}
+body.light .fx option{color:var(--t)}
 </style>
 </head>
 <body>
@@ -133,9 +159,14 @@ input[type=color]{width:28px;height:28px;border:0;padding:0;background:none;bord
 <symbol id="i-wand" viewBox="0 0 24 24"><path d="M5 19L16 8M14 6l4 4M7 4v3M5.5 5.5h3M19 14v3M17.5 15.5h3"/></symbol>
 <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 17V11a6 6 0 0112 0v6l2 2H4zM10 21h4"/></symbol>
 <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1M14 10a4 4 0 00-5.7 0l-3 3a4 4 0 005.7 5.7l1-1"/></symbol>
+<symbol id="i-more" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="12" cy="19" r="1.4"/></symbol>
 </defs></svg>
 
-<div id="act" class="modal hide"><div class="card" style="padding:16px;text-align:center"><div id="emo"></div><button class="btn" id="arep">Reply</button><button class="btn" id="adel" style="background:#ef4444;margin-top:8px;box-shadow:none;color:#fff">Delete</button></div></div>
+<div id="act" class="modal hide"><div class="card" style="padding:16px;text-align:center"><div id="emo"></div><button class="btn" id="arep">Reply</button><button class="btn mb" id="afwd" style="margin-top:8px">Forward</button><button class="btn mb" id="apin" style="margin-top:8px">Pin on top</button><button class="btn" id="adel" style="background:#ef4444;margin-top:8px;box-shadow:none;color:#fff">Delete</button></div></div>
+<div id="gifp" class="modal hide"><div class="card" style="max-width:480px;padding:14px;text-align:left"><input type="text" id="gq" placeholder="Search GIFs..." style="margin-bottom:8px"><div id="gg"></div><div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--mut)"><span>Powered by GIPHY</span><button class="chip" id="gx">Close</button></div></div></div>
+<div id="menu" class="modal hide"><div class="card" style="padding:14px"><button class="btn mb" id="msearch">Search in chat</button><button class="btn mb" id="mttl">Disappearing messages: Off</button><button class="btn mb" id="mloc">Share my location</button><button class="btn mb" id="mpoll">Create a poll</button></div></div>
+<div id="fwd" class="modal hide"><div class="card" style="max-width:380px;padding:12px;text-align:left"><b>Forward to...</b><div id="fwdl" style="max-height:55vh;overflow-y:auto;margin-top:8px"></div></div></div>
 <div id="boot"><div class="lg"><svg viewBox="0 0 24 24"><path d="M4 5h16a1 1 0 011 1v10a1 1 0 01-1 1H10l-5 4v-4H4a1 1 0 01-1-1V6a1 1 0 011-1z"/><g class="dots" fill="#06101c" stroke="none"><circle cx="8" cy="11" r="1.2"/><circle cx="12" cy="11" r="1.2"/><circle cx="16" cy="11" r="1.2"/></g></svg></div><h1>whatsappDIaa</h1><div class="ld"><i></i></div></div>
 <div id="net" class="hide">Connection lost. Reconnecting...</div>
 <div id="lb" class="modal hide" onclick="this.classList.add('hide')"><img id="lbi" alt="" style="max-width:100%;max-height:100%;border-radius:14px"></div>
@@ -172,12 +203,14 @@ input[type=color]{width:28px;height:28px;border:0;padding:0;background:none;bord
     <button class="ib" id="back" style="color:#aaa"><svg class="i"><use href="#i-back"/></svg></button>
     <img id="cav" class="av" alt=""><div><b id="cname"></b><div id="csub"></div></div><span class="sp"></span>
     <input type="color" id="col" value="#ffffff" title="Text color">
-    <button class="ib" id="ebtn" title="Nickname"><svg class="i"><use href="#i-edit"/></svg></button><button class="ib" id="vbtn" title="Video call"><svg class="i"><use href="#i-video"/></svg></button>
+    <button class="ib" id="menubtn" title="More"><svg class="i"><use href="#i-more"/></svg></button><button class="ib" id="ebtn" title="Nickname"><svg class="i"><use href="#i-edit"/></svg></button><button class="ib" id="vbtn" title="Video call"><svg class="i"><use href="#i-video"/></svg></button>
     <button class="ib" id="abtn" title="Voice call"><svg class="i"><use href="#i-phone"/></svg></button>
    </div>
-   <div id="msgs"></div>
+   <div id="sbar" class="hide" style="display:flex;gap:6px;padding:6px 10px;background:rgba(255,255,255,.05)"><input type="text" id="sq" placeholder="Search in this chat..." style="margin:0"><button class="ib" id="sx"><svg class="i"><use href="#i-x"/></svg></button></div>
+<div id="pinbar" class="hide"><span id="ptxt"></span><button class="ib" id="px"><svg class="i"><use href="#i-x"/></svg></button></div>
+<div id="msgs"></div>
    <div id="rbar" class="hide"><span id="rtxt"></span><button class="ib" id="rclose"><svg class="i"><use href="#i-x"/></svg></button></div>
-<div id="more" class="hide"><div style="margin-bottom:8px"><button class="chip on" id="fxbtn">Voice: Normal</button> <span style="font-size:12px;color:var(--mut)">Tap to change how your voice notes sound</span></div><div id="stkg"></div></div>
+<div id="more" class="hide"><div style="margin-bottom:8px"><button class="chip on" id="fxbtn">Voice: Normal</button> <span style="font-size:12px;color:var(--mut)">Tap to change how your voice notes sound</span> <button class="chip on" id="gifbtn">GIF</button></div><div id="stkg"></div></div>
 <div id="foot">
     <button class="ib" id="morebtn" title="Stickers & voice effect"><svg class="i"><use href="#i-plus"/></svg></button><button class="ib" id="pbtn" title="Photo"><svg class="i"><use href="#i-img"/></svg></button>
     <input type="file" id="pf" accept="image/*,.html,.htm,.txt,.pdf,.doc,.docx" class="hide">
@@ -217,10 +250,13 @@ input[type=color]{width:28px;height:28px;border:0;padding:0;background:none;bord
 <p style="color:var(--mut);font-size:13px">Call ringtone</p>
 <div class="fbar" style="position:static;padding:0;margin-bottom:10px"><button class="chip" data-rt="Classic">Classic</button><button class="chip" data-rt="Digital">Digital</button><button class="chip" data-rt="Chime">Chime</button></div>
 <input type="file" id="rtf" accept="audio/*" style="color:var(--mut);font-size:13px;margin-bottom:14px;width:100%">
+<p style="color:var(--mut);font-size:13px;margin:12px 0 6px">Your status</p><input type="text" id="stin" maxlength="60" placeholder="e.g. Busy, at school...">
+<p style="color:var(--mut);font-size:13px;margin:0 0 6px">Look</p><div style="display:flex;gap:8px;align-items:center;margin-bottom:14px"><button class="chip" id="thm">Light theme</button><span id="acc" style="display:flex;gap:6px"></span></div>
 <button class="btn" id="setins" style="margin-bottom:10px">Install as app</button><button class="btn" id="setx" style="background:var(--gl);color:var(--t);box-shadow:none">Close</button></div></div>
 <div id="ins" class="hide"><span id="instxt" style="flex:1"></span><button class="chip on" id="insgo">Install</button><button class="chip" id="insno">Later</button></div>
 <script>
 // ================= SETTINGS (edit these) =================
+const GIPHY_KEY = "HV5t1IMycYUOpUiADkcWlBMkuTSWl1In"; // paste your free GIPHY key between the quotes (developers.giphy.com)
 const SERVER_URL = "https://whatsappgggg.onrender.com";
 const ICE = [
   { urls: 'stun:stun.l.google.com:19302' }
@@ -293,7 +329,7 @@ function renderList() {
   l.append(row('data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><defs><linearGradient id="g"><stop stop-color="#8b5cf6"/><stop offset="1" stop-color="#00f0c8"/></linearGradient></defs><rect width="24" height="24" fill="url(#g)"/><g fill="none" stroke="#06101c" stroke-width="1.6" stroke-linecap="round"><circle cx="9" cy="9" r="2.5"/><circle cx="16" cy="10" r="2"/><path d="M4 18c0-3 2.5-4.5 5-4.5s5 1.5 5 4.5M15 14c2.5 0 5 1 5 4"/></g></svg>'), 'Family Group', unread[GRP] ? '● ' + unread[GRP] + ' new' : 'Everyone', () => openChat({ key: GRP, name: 'Family Group', avatar: '', group: true })));
   if (!allUsers.length) { const p = document.createElement('p'); p.style.cssText = 'text-align:center;color:#8696a0;font-size:14px'; p.textContent = 'No one else yet. (Server may be waking up)'; l.append(p); }
   allUsers.forEach(u => {
-    const k = u.username.toLowerCase(), r = row(u.avatar, dn(k, u.username), unread[k] ? '● ' + unread[k] + ' new' : (u.online ? 'online' : (nick[k] ? u.username : 'offline')), () => openChat({ key: k, name: u.username, avatar: u.avatar }));
+    const k = u.username.toLowerCase(), r = row(u.avatar, dn(k, u.username), unread[k] ? '● ' + unread[k] + ' new' : (u.status || (u.online ? 'online' : (nick[k] ? u.username : 'offline'))), () => openChat({ key: k, name: u.username, avatar: u.avatar }));
     if (u.online) r.firstChild.classList.add('on'); l.append(r);
   });
 }
@@ -308,7 +344,7 @@ function openChat(c) {
   $('msgs').innerHTML = '';
   if (c.note) JSON.parse(localStorage.getItem('diaa_notes') || '[]').forEach(draw);
   else (msgs[c.key] || []).forEach(draw);
-  delete unread[c.key]; renderList(); markRead(c.key); subline(); $('app').classList.add('chatting');
+  delete unread[c.key]; renderList(); markRead(c.key); subline(); showPin(); $('sbar').classList.add('hide'); $('sq').value = ''; $('app').classList.add('chatting');
 }
 $('back').onclick = () => { active = null; $('app').classList.remove('chatting'); $('active').classList.add('hide'); $('empty').classList.remove('hide'); };
 
@@ -319,10 +355,12 @@ function draw(m) {
   if (grp && !mine) { const n = document.createElement('div'); n.className = 'who'; n.textContent = dn(m.from.toLowerCase(), m.from); d.append(n); }
   if (m.reply) { const q = document.createElement('div'); q.className = 'rq'; q.textContent = m.reply.name + ': ' + m.reply.text; d.append(q); }
   if (m.type === 'photo') { const i = new Image(); i.src = m.text; i.onclick = () => { $('lbi').src = m.text; $('lb').classList.remove('hide'); }; d.append(i); }
+  else if (m.type === 'gif') { const i = new Image(); i.src = m.text; i.onclick = () => { $('lbi').src = m.text; $('lb').classList.remove('hide'); }; d.classList.add('gm'); d.append(i); }
+  else if (m.type === 'poll') d.append(pollEl(m));
   else if (m.type === 'voice') d.append(voiceEl(m.text));
   else if (m.type === 'video') { const v = document.createElement('video'); v.controls = true; v.playsInline = true; v.src = m.text + '#t=0.1'; v.preload = 'metadata'; v.style.cssText = 'max-width:100%;border-radius:12px'; d.append(v); }
   else if (m.type === 'html' || m.type === 'file') { const l = document.createElement('a'); l.href = m.text; l.download = m.fileName || 'file'; l.className = 'fl'; l.innerHTML = ic('file'); l.append(m.fileName || 'File'); d.append(l); }
-  else { if (/^(\p{Extended_Pictographic}\uFE0F?){1,3}$/u.test(m.text)) d.classList.add('stk'); d.append(document.createTextNode(m.text)); }
+  else { if (/^(\p{Extended_Pictographic}\uFE0F?){1,3}$/u.test(m.text)) d.classList.add('stk'); d.append(linkify(m.text)); const u = firstUrl(m.text); if (u) d.append(linkCard(u)); }
   const rx = document.createElement('div'); rx.className = 'rx'; rx.textContent = rxText(m); d.append(rx);
   const s = document.createElement('small'); s.textContent = m.time;
   if (mine && active && !active.note && !grp) { const t = document.createElement('span'); t.className = 'tk ' + (m.status || 'sent'); t.dataset.tk = m.id; t.innerHTML = tkh(m.status || 'sent'); s.append(t); }
@@ -333,9 +371,10 @@ function draw(m) {
 function add(key, m) { (msgs[key] = msgs[key] || []).push(m); if (active && active.key === key) draw(m); }
 function send(type, text, fn) {
   if (!active || !text) return;
-  const m = { id: Date.now() + '' + Math.random().toString(36).slice(2), from: me.username, to: active.group ? GRP : active.name, text, type, fileName: fn, status: 'sent', reply: replyTo ? { name: replyTo.from, text: prev(replyTo) } : undefined,
+  const m = { id: Date.now() + '' + Math.random().toString(36).slice(2), from: me.username, to: active.group ? GRP : active.name, text, type, fileName: fn, ttl: active.note ? undefined : (ttl[active.key] || undefined), status: 'sent', reply: replyTo ? { name: replyTo.from, text: prev(replyTo) } : undefined,
     time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), color: $('col').value };
   replyTo = null; $('rbar').classList.add('hide');
+  if (m.ttl) m.exp = Date.now() + m.ttl * 1000;
   if (active.note) {
     const n = JSON.parse(localStorage.getItem('diaa_notes') || '[]'); n.push(m); localStorage.setItem('diaa_notes', JSON.stringify(n)); draw(m);
   } else { emitQ('send_message', m); add(active.key, m); }
@@ -346,7 +385,7 @@ function del(m) {
   const e = document.querySelector('[data-id="' + m.id + '"]'); if (e) e.remove();
 }
 socket.on('receive_message', m => {
-  const k = m.to === GRP ? GRP : m.from.toLowerCase(); m.fresh = true; add(k, m); ping(); if (navigator.vibrate) navigator.vibrate(60);
+  const k = m.to === GRP ? GRP : m.from.toLowerCase(); m.fresh = true; if (m.ttl) m.exp = Date.now() + m.ttl * 1000; add(k, m); ping(); if (navigator.vibrate) navigator.vibrate(60);
   if (!active || active.key !== k) { unread[k] = (unread[k] || 0) + 1; renderList(); } else markRead(k);
   if (document.hidden) notif(m.to === GRP ? 'Family Group' : dn(m.from.toLowerCase(), m.from), (m.to === GRP ? m.from + ': ' : '') + prev(m));
 });
@@ -525,7 +564,7 @@ function ringStart() {
   go(); rti = setInterval(go, 2000);
 }
 function ringStop() { raud.pause(); clearInterval(rti); closeCallNotif(); }
-$('setbtn').onclick = () => $('set').classList.remove('hide'); $('setx').onclick = () => $('set').classList.add('hide');
+$('setbtn').onclick = () => { $('stin').value = (me && me.status) || ''; $('set').classList.remove('hide'); }; $('setx').onclick = () => $('set').classList.add('hide');
 document.querySelectorAll('[data-rt]').forEach(b => b.onclick = () => { localStorage.setItem('diaa_rt', b.dataset.rt); localStorage.removeItem('diaa_rt_file'); ringStart(); setTimeout(ringStop, 2200); });
 $('rtf').onchange = e => { const f = e.target.files[0]; if (!f) return; if (f.size > 1.5e6) return alert('File too big (max 1.5 MB)'); const r = new FileReader(); r.onload = () => { try { localStorage.setItem('diaa_rt_file', r.result); alert('Ringtone saved'); } catch (x) { alert('Too big'); } }; r.readAsDataURL(f); };
 
@@ -557,7 +596,7 @@ setTimeout(() => { $('boot').classList.add('out'); setTimeout(() => $('boot').re
 
 // ---------- reply, reactions, ticks, typing, stickers, voice effects, notifications ----------
 let actM = null, replyTo = null, lastT = 0; const typing = {};
-const prev = m => m.type === 'text' ? m.text.slice(0, 50) : ({ photo: 'Photo', voice: 'Voice message', video: 'Video', html: 'File', file: 'File' })[m.type] || '';
+const prev = m => m.type === 'text' ? m.text.slice(0, 50) : ({ poll: 'Poll', gif: 'GIF', photo: 'Photo', voice: 'Voice message', video: 'Video', html: 'File', file: 'File' })[m.type] || '';
 const rxText = m => Object.values(m.reactions || {}).join(' ');
 const tkh = st => st === 'sent' ? ic('check') : ic('check') + ic('check');
 function findMsg(id) { for (const k in msgs) { const m = msgs[k].find(x => x.id === id); if (m) return m; } }
@@ -572,7 +611,7 @@ function react(m, e) {
   m.reactions = m.reactions || {}; if (m.reactions[me.username] === e) delete m.reactions[me.username]; else m.reactions[me.username] = e;
   updRx(m); if (active && !active.note) emitQ('react', { id: m.id, to: active.group ? GRP : active.name, emoji: m.reactions[me.username] || '' });
 }
-socket.on('reacted', p => { const m = findMsg(p.id); if (!m) return; m.reactions = m.reactions || {}; if (p.emoji) m.reactions[p.from] = p.emoji; else delete m.reactions[p.from]; updRx(m); });
+socket.on('reacted', p => { const m = findMsg(p.id); if (!m) return; if (String(p.emoji).startsWith('vote:')) { (m.votes = m.votes || {})[p.from] = +p.emoji.slice(5); return updPoll(m); } m.reactions = m.reactions || {}; if (p.emoji) m.reactions[p.from] = p.emoji; else delete m.reactions[p.from]; updRx(m); });
 function tick(id, st) { const m = findMsg(id); if (!m || m.status === 'read') return; m.status = st; const t = document.querySelector('.tk[data-tk="' + id + '"]'); if (t) { t.className = 'tk ' + st; t.innerHTML = tkh(st); } }
 socket.on('delivered', ({ id }) => tick(id, 'delivered'));
 socket.on('read_ack', ({ ids }) => ids.forEach(id => tick(id, 'read')));
@@ -587,7 +626,7 @@ function subline() {
   if (typing[active.key] && Date.now() - typing[active.key] < 3000) { e.textContent = 'typing...'; e.style.color = 'var(--g)'; return; }
   e.style.color = 'var(--mut)';
   if (active.group) { e.textContent = (allUsers.filter(u => u.online).length + 1) + ' online'; return; }
-  const u = allUsers.find(x => x.username.toLowerCase() === active.key); e.textContent = u && u.online ? 'online' : 'offline';
+  const u = allUsers.find(x => x.username.toLowerCase() === active.key); e.textContent = (u && u.online ? 'online' : 'offline') + (u && u.status ? ' · ' + u.status : '');
 }
 socket.on('typing', ({ from, to }) => { const k = to === GRP ? GRP : from.toLowerCase(); typing[k] = Date.now(); subline(); setTimeout(subline, 3100); });
 $('txt').oninput = () => { if (!active || active.note) return; const t = Date.now(); if (t - lastT > 2000) { lastT = t; socket.emit('typing', { to: active.group ? GRP : active.name }); } };
@@ -626,6 +665,109 @@ function callNotif(d) {
 }
 function closeCallNotif() { if ('serviceWorker' in navigator) navigator.serviceWorker.ready.then(r => r.getNotifications({ tag: 'call' }).then(l => l.forEach(n => n.close()))).catch(() => {}); }
 if ('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message', e => { if (!inc) return; if (e.data === 'answer') $('accept').click(); else if (e.data === 'decline') $('decline').click(); });
+
+// ---------- link previews ----------
+const SITES = [[/youtube\.com$|^youtu\.be$/, 'YouTube'], [/instagram\.com$/, 'Instagram'], [/tiktok\.com$/, 'TikTok'], [/facebook\.com$|^fb\.watch$/, 'Facebook'], [/(^|\.)x\.com$|twitter\.com$/, 'X (Twitter)'], [/github\.com$/, 'GitHub'], [/wikipedia\.org$/, 'Wikipedia'], [/spotify\.com$/, 'Spotify'], [/reddit\.com$/, 'Reddit'], [/google\.[a-z.]+$/, 'Google'], [/snapchat\.com$/, 'Snapchat'], [/twitch\.tv$/, 'Twitch']];
+const firstUrl = t => (t.match(/https?:\/\/[^\s<]+/) || [''])[0].replace(/[.,!?;:)\]]+$/, '');
+function linkify(t) {
+  const f = document.createDocumentFragment();
+  t.split(/(https?:\/\/[^\s<]+)/g).forEach((p, i) => {
+    if (i % 2 === 0) { if (p) f.append(document.createTextNode(p)); return; }
+    const u = p.replace(/[.,!?;:)\]]+$/, ''), tail = p.slice(u.length), a = document.createElement('a');
+    a.className = 'u'; a.href = u; a.target = '_blank'; a.rel = 'noopener noreferrer'; a.textContent = u; f.append(a);
+    if (tail) f.append(document.createTextNode(tail));
+  });
+  return f;
+}
+function linkCard(u) {
+  let h; try { h = new URL(u); } catch (e) { return document.createTextNode(''); }
+  const host = h.hostname.replace(/^www\./, ''), site = SITES.find(x => x[0].test(host));
+  const a = document.createElement('a'); a.className = 'lc'; a.href = h.href; a.target = '_blank'; a.rel = 'noopener noreferrer';
+  const yt = host === 'youtu.be' ? h.pathname.slice(1) : (/youtube\.com$/.test(host) ? (h.searchParams.get('v') || (h.pathname.match(/\/(shorts|embed)\/([\w-]{6,})/) || [])[2] || '') : '');
+  if (yt) { const i = new Image(); i.src = 'https://img.youtube.com/vi/' + yt + '/hqdefault.jpg'; i.className = 'lci'; a.append(i); }
+  const b = document.createElement('div'), s = document.createElement('div'), t = document.createElement('div');
+  b.className = 'lcb'; s.className = 'lcs'; t.className = 'lct';
+  s.innerHTML = ic('link'); s.append(/google\./.test(host) && h.pathname.startsWith('/maps') ? 'Google Maps' : site ? site[1] : host); t.textContent = host + (h.pathname.length > 1 ? h.pathname.slice(0, 40) : '');
+  b.append(s, t); a.append(b);
+  if (yt) fetch('https://noembed.com/embed?url=' + encodeURIComponent(h.href)).then(r => r.json()).then(j => { if (j.title) t.textContent = j.title; }).catch(() => {});
+  return a;
+}
+
+// ---------- GIFs (GIPHY) ----------
+let gifT = null;
+async function gifLoad(q) {
+  const g = $('gg'); if (!GIPHY_KEY) { g.textContent = 'GIF key missing. Add your free GIPHY key at the top of index.html.'; return; }
+  g.textContent = 'Loading...';
+  try {
+    const r = await fetch('https://api.giphy.com/v1/gifs/' + (q ? 'search?q=' + encodeURIComponent(q) + '&' : 'trending?') + 'api_key=' + GIPHY_KEY + '&limit=24&rating=pg-13');
+    const j = await r.json(); g.textContent = '';
+    if (!j.data || !j.data.length) { g.textContent = r.status === 429 ? 'Too many searches. Try again in a little while.' : 'No GIFs found.'; return; }
+    j.data.forEach(x => { const i = new Image(); i.src = x.images.fixed_height_small.url; i.loading = 'lazy'; i.onclick = () => { send('gif', x.images.downsized.url); $('gifp').classList.add('hide'); $('more').classList.add('hide'); }; g.append(i); });
+  } catch (e) { g.textContent = 'Could not load GIFs. Check your connection.'; }
+}
+$('gifbtn').onclick = () => { $('gifp').classList.remove('hide'); $('gq').value = ''; gifLoad(''); };
+$('gq').oninput = () => { clearTimeout(gifT); gifT = setTimeout(() => gifLoad($('gq').value.trim()), 500); };
+$('gx').onclick = () => $('gifp').classList.add('hide');
+$('gifp').onclick = e => { if (e.target.id === 'gifp') $('gifp').classList.add('hide'); };
+
+// ---------- menu: search, disappearing, location, polls ----------
+const TTLS = [[0, 'Off'], [60, '1 minute'], [3600, '1 hour'], [86400, '1 day']], ttl = JSON.parse(localStorage.getItem('diaa_ttl') || '{}');
+$('menubtn').onclick = () => { if (!active) return; $('mttl').textContent = 'Disappearing messages: ' + TTLS.find(x => x[0] === (ttl[active.key] || 0))[1]; $('menu').classList.remove('hide'); };
+$('menu').onclick = e => { if (e.target.id === 'menu') $('menu').classList.add('hide'); };
+$('msearch').onclick = () => { $('menu').classList.add('hide'); $('sbar').classList.remove('hide'); $('sq').focus(); };
+$('sq').oninput = () => { const q = $('sq').value.toLowerCase(); document.querySelectorAll('#msgs .m').forEach(e => e.style.display = !q || e.textContent.toLowerCase().includes(q) ? '' : 'none'); };
+$('sx').onclick = () => { $('sq').value = ''; $('sq').oninput(); $('sbar').classList.add('hide'); };
+$('mttl').onclick = () => { if (active.note) return; const i = TTLS.findIndex(x => x[0] === (ttl[active.key] || 0)), n = TTLS[(i + 1) % TTLS.length]; ttl[active.key] = n[0]; localStorage.setItem('diaa_ttl', JSON.stringify(ttl)); $('mttl').textContent = 'Disappearing messages: ' + n[1]; };
+setInterval(() => { const now = Date.now(); for (const k in msgs) msgs[k] = msgs[k].filter(m => { if (m.exp && m.exp < now) { const e = document.querySelector('[data-id="' + m.id + '"]'); if (e) e.remove(); return false; } return true; }); }, 3000);
+$('mloc').onclick = () => {
+  if (active.note) return; $('menu').classList.add('hide');
+  if (!navigator.geolocation) return alert('Location is not available on this device.');
+  if (!confirm('Share your current location with ' + active.name + '?')) return;
+  navigator.geolocation.getCurrentPosition(p => send('text', 'My location: https://www.google.com/maps?q=' + p.coords.latitude.toFixed(5) + ',' + p.coords.longitude.toFixed(5)), () => alert('Location blocked. Allow it in your browser settings.'), { enableHighAccuracy: true, timeout: 15000 });
+};
+$('mpoll').onclick = () => {
+  if (active.note) return; $('menu').classList.add('hide');
+  const q = (prompt('Poll question:') || '').trim(); if (!q) return;
+  const o = (prompt('Answers, separated by commas (2 to 4):') || '').split(',').map(x => x.trim().slice(0, 40)).filter(Boolean).slice(0, 4);
+  if (o.length < 2) return alert('A poll needs at least 2 answers.');
+  send('poll', JSON.stringify({ q: q.slice(0, 100), o }));
+};
+function pollEl(m) { const w = document.createElement('div'); w.className = 'poll'; w.dataset.poll = m.id; fillPoll(w, m); return w; }
+function fillPoll(w, m) {
+  let p; try { p = JSON.parse(m.text); } catch (e) { w.textContent = 'Poll'; return; }
+  const v = m.votes || {}, tot = Object.keys(v).length; w.innerHTML = '';
+  const q = document.createElement('b'); q.textContent = p.q; w.append(q);
+  p.o.forEach((o, i) => { const n = Object.values(v).filter(x => x === i).length, b = document.createElement('button'); b.className = 'po' + (v[me.username] === i ? ' on' : ''); b.style.setProperty('--w', (tot ? n / tot * 100 : 0) + '%'); b.textContent = o + ' · ' + n; b.onclick = () => vote(m, i); w.append(b); });
+}
+function updPoll(m) { const w = document.querySelector('[data-poll="' + m.id + '"]'); if (w) fillPoll(w, m); }
+function vote(m, i) { (m.votes = m.votes || {})[me.username] = i; updPoll(m); if (active && !active.note) emitQ('react', { id: m.id, to: active.group ? GRP : active.name, emoji: 'vote:' + i }); }
+
+// ---------- forward and pin ----------
+const pins = JSON.parse(localStorage.getItem('diaa_pins') || '{}');
+$('afwd').onclick = () => {
+  $('act').classList.add('hide'); const l = $('fwdl'); l.innerHTML = '';
+  const go = c => () => { const keep = active, rp = replyTo, n = $('msgs').children.length; active = c; replyTo = null; send(actM.type, actM.text, actM.fileName); active = keep; replyTo = rp; while ($('msgs').children.length > n) $('msgs').lastChild.remove(); $('fwd').classList.add('hide'); };
+  l.append(row('', 'Family Group', 'Everyone', go({ key: GRP, name: 'Family Group', group: true })));
+  allUsers.forEach(u => { const k = u.username.toLowerCase(); l.append(row(u.avatar, dn(k, u.username), u.online ? 'online' : 'offline', go({ key: k, name: u.username, avatar: u.avatar }))); });
+  $('fwd').classList.remove('hide');
+};
+$('fwd').onclick = e => { if (e.target.id === 'fwd') $('fwd').classList.add('hide'); };
+function showPin() { const p = active && pins[active.key]; $('pinbar').classList.toggle('hide', !p); if (p) $('ptxt').textContent = 'Pinned: ' + p.text; }
+$('apin').onclick = () => { pins[active.key] = { id: actM.id, text: prev(actM) }; localStorage.setItem('diaa_pins', JSON.stringify(pins)); showPin(); $('act').classList.add('hide'); };
+$('px').onclick = e => { e.stopPropagation(); delete pins[active.key]; localStorage.setItem('diaa_pins', JSON.stringify(pins)); showPin(); };
+$('pinbar').onclick = () => { const p = pins[active.key], e = p && document.querySelector('[data-id="' + p.id + '"]'); if (e) e.scrollIntoView({ behavior: 'smooth', block: 'center' }); };
+
+// ---------- look (light theme, colors) and status ----------
+const ACC = [['#00f0c8', '#8b5cf6'], ['#38bdf8', '#f472b6'], ['#fb923c', '#ef4444'], ['#a3e635', '#22c55e'], ['#f472b6', '#a855f7']];
+function look() {
+  const l = localStorage.getItem('diaa_light') === '1', a = ACC[+localStorage.getItem('diaa_acc') || 0];
+  document.body.classList.toggle('light', l); document.documentElement.style.setProperty('--g', a[0]); document.documentElement.style.setProperty('--v', a[1]);
+  $('thm').textContent = l ? 'Dark theme' : 'Light theme';
+}
+ACC.forEach((a, i) => { const b = document.createElement('button'); b.className = 'sw'; b.style.background = 'linear-gradient(135deg,' + a[0] + ',' + a[1] + ')'; b.onclick = () => { localStorage.setItem('diaa_acc', i); look(); }; $('acc').append(b); });
+$('thm').onclick = () => { localStorage.setItem('diaa_light', localStorage.getItem('diaa_light') === '1' ? '0' : '1'); look(); };
+$('stin').onchange = () => { if (!me) return; me.status = $('stin').value.trim().slice(0, 60); localStorage.setItem('diaa_user', JSON.stringify(me)); socket.emit('register_user', me); };
+look();
 
 // ---------- boot ----------
 const saved = localStorage.getItem('diaa_user');
