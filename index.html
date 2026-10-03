@@ -413,7 +413,7 @@ function mk(init, sig) {
   if (sig) peer.signal(sig);
 }
 async function startCall(type) {
-  if (!active || active.note) return;
+  if (!active || active.note || callPeer) return;
   callType = type; callPeer = active.key; $('cn').textContent = active.name; $('st').textContent = 'Calling...';
   if (await media(type)) mk(true);
 }
@@ -423,7 +423,7 @@ socket.on('incoming_call', d => {
   inc = d; callType = d.type;
   $('iname').textContent = d.name + ' is calling...'; $('itype').textContent = d.type === 'video' ? 'Video call' : 'Voice call';
   const u = allUsers.find(x => x.username === d.from); $('iav').src = u ? u.avatar : '';
-  $('inc').classList.remove('hide'); ringStart();
+  $('inc').classList.remove('hide'); ringStart(); callNotif(d);
 });
 $('accept').onclick = async () => { ringStop();
   $('inc').classList.add('hide'); callPeer = inc.from.toLowerCase(); $('cn').textContent = inc.name; $('st').textContent = 'Connecting...';
@@ -440,6 +440,7 @@ function end(remote) {
   $('call').classList.add('hide'); $('inc').classList.add('hide'); callPeer = null;
 }
 socket.on('call_ended', () => end(true));
+socket.on('call_busy', ({ name }) => { alert(name + ' is on another call right now. Try again in a bit.'); end(true); });
 socket.on('call_unavailable', () => { alert('That person is offline.'); end(true); });
 $('hang').onclick = () => end();
 $('mute').onclick = () => { if (stream) { const t = stream.getAudioTracks()[0]; t.enabled = !t.enabled; $('mute').style.opacity = t.enabled ? 1 : .4; } };
@@ -523,7 +524,7 @@ function ringStart() {
   const go = () => { let t = rtx.currentTime; pat.forEach(([f, d]) => { if (f) { const o = rtx.createOscillator(), g = rtx.createGain(); o.frequency.value = f; g.gain.value = .15; o.connect(g).connect(rtx.destination); o.start(t); o.stop(t + d); } t += d; }); };
   go(); rti = setInterval(go, 2000);
 }
-function ringStop() { raud.pause(); clearInterval(rti); }
+function ringStop() { raud.pause(); clearInterval(rti); closeCallNotif(); }
 $('setbtn').onclick = () => $('set').classList.remove('hide'); $('setx').onclick = () => $('set').classList.add('hide');
 document.querySelectorAll('[data-rt]').forEach(b => b.onclick = () => { localStorage.setItem('diaa_rt', b.dataset.rt); localStorage.removeItem('diaa_rt_file'); ringStart(); setTimeout(ringStop, 2200); });
 $('rtf').onchange = e => { const f = e.target.files[0]; if (!f) return; if (f.size > 1.5e6) return alert('File too big (max 1.5 MB)'); const r = new FileReader(); r.onload = () => { try { localStorage.setItem('diaa_rt_file', r.result); alert('Ringtone saved'); } catch (x) { alert('Too big'); } }; r.readAsDataURL(f); };
@@ -615,6 +616,16 @@ function notif(t, b) {
   if ('serviceWorker' in navigator) navigator.serviceWorker.ready.then(r => r.showNotification(t, o)).catch(() => new Notification(t, o)); else new Notification(t, o);
 }
 document.addEventListener('click', () => { if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission(); }, { once: true });
+
+// ---------- call notifications (Answer / Decline buttons) ----------
+function callNotif(d) {
+  if (!document.hidden || !('Notification' in window) || Notification.permission !== 'granted') return;
+  const t = d.name + ' is calling...', o = { body: d.type === 'video' ? 'Video call' : 'Voice call', icon: 'icon-192.png', tag: 'call', renotify: true, requireInteraction: true, vibrate: [300, 150, 300, 150, 300], actions: [{ action: 'answer', title: 'Answer' }, { action: 'decline', title: 'Decline' }] };
+  if ('serviceWorker' in navigator) navigator.serviceWorker.ready.then(r => r.showNotification(t, o)).catch(() => new Notification(t, { body: o.body, icon: o.icon }));
+  else new Notification(t, { body: o.body, icon: o.icon });
+}
+function closeCallNotif() { if ('serviceWorker' in navigator) navigator.serviceWorker.ready.then(r => r.getNotifications({ tag: 'call' }).then(l => l.forEach(n => n.close()))).catch(() => {}); }
+if ('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message', e => { if (!inc) return; if (e.data === 'answer') $('accept').click(); else if (e.data === 'decline') $('decline').click(); });
 
 // ---------- boot ----------
 const saved = localStorage.getItem('diaa_user');
