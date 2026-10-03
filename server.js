@@ -28,7 +28,7 @@ const GROUP = '__group';
 const busy = new Map(); // lowercase name -> lowercase name of the person they are on a call with
 function freeCall(key) { const p = busy.get(key); busy.delete(key); if (p && busy.get(p) === key) busy.delete(p); return p; }
 const msgOwners = new Map(); // message id -> { from, to } (for deletes)
-const TYPES = ['text', 'photo', 'voice', 'video', 'html', 'file'];
+const TYPES = ['text', 'photo', 'voice', 'video', 'html', 'file', 'gif', 'poll'];
 
 function safeEqual(a, b) {
   const x = crypto.createHash('sha256').update(String(a)).digest();
@@ -36,7 +36,7 @@ function safeEqual(a, b) {
   return crypto.timingSafeEqual(x, y);
 }
 function publicList() {
-  return [...users.values()].map(u => ({ username: u.username, avatar: u.avatar, online: !!u.socketId }));
+  return [...users.values()].map(u => ({ username: u.username, avatar: u.avatar, status: u.status || '', online: !!u.socketId }));
 }
 function socketOf(name) {
   const u = users.get(String(name || '').toLowerCase());
@@ -52,7 +52,7 @@ io.on('connection', (socket) => {
     try {
       if (!data || !safeEqual(data.password, PASSWORD)) return socket.emit('auth_error');
       const username = String(data.username || '').trim().slice(0, 20);
-      const avatar = String(data.avatar || '');
+      const avatar = String(data.avatar || ''), status = String(data.status || '').slice(0, 60);
       if (!/^[\w ]{1,20}$/.test(username)) return socket.emit('auth_error');
       if (!(avatar.startsWith('data:image/') || avatar.startsWith('https://')) || avatar.length > 300000)
         return socket.emit('auth_error');
@@ -61,7 +61,7 @@ io.on('connection', (socket) => {
       if (socket.data.key && socket.data.key !== key) users.delete(socket.data.key); // renamed profile
       socket.data.key = key;
       socket.data.username = username;
-      users.set(key, { username, avatar, socketId: socket.id });
+      users.set(key, { username, avatar, status, socketId: socket.id });
       socket.join('members'); // only logged-in users get lists and group messages
       io.to('members').emit('update_user_list', publicList());
     } catch { socket.emit('auth_error'); }
@@ -70,12 +70,15 @@ io.on('connection', (socket) => {
   socket.on('send_message', (msg) => {
     if (!socket.data.username || limited() || !msg) return;
     if (!TYPES.includes(msg.type) || typeof msg.text !== 'string' || msg.text.length > 4e6) return;
+    if (msg.type === 'gif' && !/^https:\/\/(media\d*|i)\.giphy\.com\//.test(msg.text)) return; // GIFs must come from GIPHY
+    if (msg.type === 'poll') { try { const p = JSON.parse(msg.text); if (msg.text.length > 2000 || typeof p.q !== 'string' || !Array.isArray(p.o) || p.o.length < 2 || p.o.length > 4 || p.o.some(x => typeof x !== 'string')) return; } catch (e) { return; } }
     const group = msg.to === GROUP;
     const clean = {
       id: String(msg.id).slice(0, 80), from: socket.data.username, to: group ? GROUP : String(msg.to).slice(0, 20),
       text: msg.text, type: msg.type, fileName: String(msg.fileName || '').slice(0, 100),
       time: String(msg.time || '').slice(0, 20), color: /^#[0-9a-f]{6}$/i.test(msg.color) ? msg.color : '#ffffff',
       reply: msg.reply && typeof msg.reply.text === 'string' ? { name: String(msg.reply.name).slice(0, 20), text: msg.reply.text.slice(0, 60) } : undefined,
+      ttl: [60, 3600, 86400].includes(msg.ttl) ? msg.ttl : undefined, // disappearing messages
     };
     msgOwners.set(clean.id, { from: socket.data.username, to: clean.to });
     if (msgOwners.size > 1000) msgOwners.delete(msgOwners.keys().next().value);
