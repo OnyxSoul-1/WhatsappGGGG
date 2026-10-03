@@ -25,6 +25,8 @@ const io = new Server(server, {
 
 const users = new Map();     // lowercase name -> { username, avatar, socketId }
 const GROUP = '__group';
+const busy = new Map(); // lowercase name -> lowercase name of the person they are on a call with
+function freeCall(key) { const p = busy.get(key); busy.delete(key); if (p && busy.get(p) === key) busy.delete(p); return p; }
 const msgOwners = new Map(); // message id -> { from, to } (for deletes)
 const TYPES = ['text', 'photo', 'voice', 'video', 'html', 'file'];
 
@@ -112,6 +114,10 @@ io.on('connection', (socket) => {
     if (!socket.data.username || limited()) return;
     const target = socketOf(userToCall);
     if (!target) return socket.emit('call_unavailable');
+    const a = socket.data.key, b = target.data.key;
+    freeCall(a); // the caller is obviously not in an old call anymore
+    if (a === b || busy.has(b)) return socket.emit('call_busy', { name: target.data.username }); // no one can join a call in progress
+    busy.set(a, b); busy.set(b, a);
     target.emit('incoming_call', {
       signal, type: type === 'voice' ? 'voice' : 'video',
       from: socket.data.username, name: socket.data.username,
@@ -122,6 +128,7 @@ io.on('connection', (socket) => {
     if (target && socket.data.username) target.emit('call_accepted', { signal });
   });
   socket.on('end_call', ({ to } = {}) => {
+    freeCall(socket.data.key);
     const target = socketOf(to);
     if (target) target.emit('call_ended');
   });
@@ -130,7 +137,7 @@ io.on('connection', (socket) => {
     clearInterval(limiter);
     // keep the user in the list so contacts stay visible; they are just offline
     const u = users.get(socket.data.key);
-    if (u && u.socketId === socket.id) { u.socketId = null; io.to('members').emit('update_user_list', publicList()); }
+    if (u && u.socketId === socket.id) { const p = freeCall(socket.data.key); if (p) { const t = socketOf(p); if (t) t.emit('call_ended'); } u.socketId = null; io.to('members').emit('update_user_list', publicList()); }
   });
 });
 
