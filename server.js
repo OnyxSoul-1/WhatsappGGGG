@@ -20,9 +20,11 @@ const server = http.createServer(app);
 const io = new Server(server, {
   cors: { origin: ORIGIN },
   maxHttpBufferSize: 5e6, // 5 MB max per message (photos/voice/video)
+  pingInterval: 10000, pingTimeout: 8000, // notice a lost connection within ~18 seconds
 });
 
 const users = new Map();     // lowercase name -> { username, avatar, socketId }
+const GROUP = '__group';
 const msgOwners = new Map(); // message id -> { from, to } (for deletes)
 const TYPES = ['text', 'photo', 'voice', 'video', 'html', 'file'];
 
@@ -32,7 +34,7 @@ function safeEqual(a, b) {
   return crypto.timingSafeEqual(x, y);
 }
 function publicList() {
-  return [...users.values()].map(u => ({ username: u.username, avatar: u.avatar }));
+  return [...users.values()].map(u => ({ username: u.username, avatar: u.avatar, online: !!u.socketId }));
 }
 function socketOf(name) {
   const u = users.get(String(name || '').toLowerCase());
@@ -58,30 +60,51 @@ io.on('connection', (socket) => {
       socket.data.key = key;
       socket.data.username = username;
       users.set(key, { username, avatar, socketId: socket.id });
-      io.emit('update_user_list', publicList());
+      socket.join('members'); // only logged-in users get lists and group messages
+      io.to('members').emit('update_user_list', publicList());
     } catch { socket.emit('auth_error'); }
   });
 
   socket.on('send_message', (msg) => {
     if (!socket.data.username || limited() || !msg) return;
     if (!TYPES.includes(msg.type) || typeof msg.text !== 'string' || msg.text.length > 4e6) return;
-    const target = socketOf(msg.to);
+    const group = msg.to === GROUP;
     const clean = {
-      id: String(msg.id).slice(0, 80), from: socket.data.username, to: String(msg.to).slice(0, 20),
+      id: String(msg.id).slice(0, 80), from: socket.data.username, to: group ? GROUP : String(msg.to).slice(0, 20),
       text: msg.text, type: msg.type, fileName: String(msg.fileName || '').slice(0, 100),
       time: String(msg.time || '').slice(0, 20), color: /^#[0-9a-f]{6}$/i.test(msg.color) ? msg.color : '#ffffff',
+      reply: msg.reply && typeof msg.reply.text === 'string' ? { name: String(msg.reply.name).slice(0, 20), text: msg.reply.text.slice(0, 60) } : undefined,
     };
     msgOwners.set(clean.id, { from: socket.data.username, to: clean.to });
     if (msgOwners.size > 1000) msgOwners.delete(msgOwners.keys().next().value);
-    if (target) target.emit('receive_message', clean);
+    if (group) return socket.to('members').emit('receive_message', clean);
+    const target = socketOf(msg.to);
+    if (target) { target.emit('receive_message', clean); socket.emit('delivered', { id: clean.id }); }
   });
 
   socket.on('delete_message', ({ id } = {}) => {
     const owner = msgOwners.get(id);
     if (!owner || owner.from !== socket.data.username) return; // only your own messages
-    const target = socketOf(owner.to);
-    if (target) target.emit('message_deleted', { id });
+    if (owner.to === GROUP) socket.to('members').emit('message_deleted', { id });
+    else { const target = socketOf(owner.to); if (target) target.emit('message_deleted', { id }); }
     msgOwners.delete(id);
+  });
+
+  socket.on('typing', ({ to } = {}) => {
+    if (!socket.data.username || limited()) return;
+    const p = { from: socket.data.username, to: to === GROUP ? GROUP : undefined };
+    if (to === GROUP) return socket.to('members').emit('typing', p);
+    const t = socketOf(to); if (t) t.emit('typing', p);
+  });
+  socket.on('read', ({ to, ids } = {}) => {
+    const t = socketOf(to);
+    if (t && socket.data.username && Array.isArray(ids)) t.emit('read_ack', { ids: ids.slice(0, 100).map(String), from: socket.data.username });
+  });
+  socket.on('react', ({ id, to, emoji } = {}) => {
+    if (!socket.data.username || limited()) return;
+    const p = { id: String(id).slice(0, 80), from: socket.data.username, emoji: String(emoji || '').slice(0, 8), to: to === GROUP ? GROUP : undefined };
+    if (to === GROUP) return socket.to('members').emit('reacted', p);
+    const t = socketOf(to); if (t) t.emit('reacted', p);
   });
 
   // ---- calls ----
@@ -107,7 +130,7 @@ io.on('connection', (socket) => {
     clearInterval(limiter);
     // keep the user in the list so contacts stay visible; they are just offline
     const u = users.get(socket.data.key);
-    if (u && u.socketId === socket.id) u.socketId = null;
+    if (u && u.socketId === socket.id) { u.socketId = null; io.to('members').emit('update_user_list', publicList()); }
   });
 });
 
