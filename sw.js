@@ -11,3 +11,7 @@ self.addEventListener('notificationclick', e => {
     if (l.length) { l[0].focus(); if (e.action) l[0].postMessage(e.action); } else clients.openWindow('./');
   }));
 });
+self.addEventListener('push', e => {
+  let d = {}; try { d = e.data.json(); } catch (x) {}
+  e.waitUntil(self.registration.showNotification(d.title || 'whatsappDIaa', { body: d.body || '', icon: 'icon-192.png', badge: 'icon-192.png', tag: d.tag || 'msg', renotify: true, requireInteraction: !!d.call, vibrate: d.call ? [300, 150, 300, 150, 300] : [120] }));
+});
