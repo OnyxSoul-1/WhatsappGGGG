@@ -302,7 +302,7 @@ $('enter').onclick = () => {
 function start() {
   $('login').classList.add('hide'); $('app').classList.remove('hide');
   $('me').src = me.avatar; $('myname').textContent = me.username;
-  socket.emit('register_user', me);
+  socket.emit('register_user', me); setupPush();
   renderList();
 }
 socket.on('connect', () => { if (me) socket.emit('register_user', me); });
@@ -438,7 +438,7 @@ async function media(type) {
 }
 function mk(init, sig) {
   peer = new SimplePeer({ initiator: init, trickle: false, stream, config: { iceServers: ICE } });
-  const t = setTimeout(() => { if ($('st').textContent !== 'Connected') { alert('Call failed. A TURN server may be needed.'); end(); } }, 25000);
+  const t = setTimeout(() => { if ($('st').textContent !== 'Connected') { alert('No answer, or the call could not connect.'); end(); } }, 45000);
   peer.on('signal', d => init
     ? socket.emit('call_user', { userToCall: callPeer, signal: d, type: callType })
     : socket.emit('answer_call', { signal: d, to: callPeer }));
@@ -654,7 +654,7 @@ function notif(t, b) {
   if (!('Notification' in window) || Notification.permission !== 'granted') return; const o = { body: b, icon: 'icon-192.png', tag: t };
   if ('serviceWorker' in navigator) navigator.serviceWorker.ready.then(r => r.showNotification(t, o)).catch(() => new Notification(t, o)); else new Notification(t, o);
 }
-document.addEventListener('click', () => { if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission(); }, { once: true });
+document.addEventListener('click', () => { if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission().then(setupPush); }, { once: true });
 
 // ---------- call notifications (Answer / Decline buttons) ----------
 function callNotif(d) {
@@ -768,6 +768,18 @@ ACC.forEach((a, i) => { const b = document.createElement('button'); b.className 
 $('thm').onclick = () => { localStorage.setItem('diaa_light', localStorage.getItem('diaa_light') === '1' ? '0' : '1'); look(); };
 $('stin').onchange = () => { if (!me) return; me.status = $('stin').value.trim().slice(0, 60); localStorage.setItem('diaa_user', JSON.stringify(me)); socket.emit('register_user', me); };
 look();
+
+// ---------- notifications when the app is closed ----------
+async function setupPush() {
+  try {
+    if (!me || !('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window) || Notification.permission !== 'granted') return;
+    const reg = await navigator.serviceWorker.ready, { key } = await (await fetch(SERVER_URL + '/vapid')).json(); if (!key) return;
+    const b = key.replace(/-/g, '+').replace(/_/g, '/'), raw = atob(b + '='.repeat((4 - b.length % 4) % 4));
+    const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: Uint8Array.from([...raw].map(c => c.charCodeAt(0))) });
+    socket.emit('push_sub', sub.toJSON());
+  } catch (e) { console.log('push setup failed', e); }
+}
+socket.on('connect', () => setupPush());
 
 // ---------- boot ----------
 const saved = localStorage.getItem('diaa_user');
