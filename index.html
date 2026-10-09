@@ -385,7 +385,7 @@ function del(m) {
   const e = document.querySelector('[data-id="' + m.id + '"]'); if (e) e.remove();
 }
 socket.on('receive_message', m => {
-  const k = m.to === GRP ? GRP : m.from.toLowerCase(); m.fresh = true; if (m.ttl) m.exp = Date.now() + m.ttl * 1000; add(k, m); ping(); if (navigator.vibrate) navigator.vibrate(60);
+  const k = m.to === GRP ? GRP : m.from.toLowerCase(); if (!m.time) m.time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); m.fresh = true; if (m.ttl) m.exp = Date.now() + m.ttl * 1000; add(k, m); ping(); if (navigator.vibrate) navigator.vibrate(60);
   if (!active || active.key !== k) { unread[k] = (unread[k] || 0) + 1; renderList(); } else markRead(k);
   if (document.hidden) notif(m.to === GRP ? 'Family Group' : dn(m.from.toLowerCase(), m.from), (m.to === GRP ? m.from + ': ' : '') + prev(m));
 });
@@ -462,7 +462,7 @@ socket.on('incoming_call', d => {
   inc = d; callType = d.type;
   $('iname').textContent = d.name + ' is calling...'; $('itype').textContent = d.type === 'video' ? 'Video call' : 'Voice call';
   const u = allUsers.find(x => x.username === d.from); $('iav').src = u ? u.avatar : '';
-  $('inc').classList.remove('hide'); ringStart(); callNotif(d);
+  $('inc').classList.remove('hide'); ringStart(); callNotif(d); if (autoAnswer) { autoAnswer = false; history.replaceState(null, '', location.pathname); setTimeout(() => $('accept').click(), 500); }
 });
 $('accept').onclick = async () => { ringStop();
   $('inc').classList.add('hide'); callPeer = inc.from.toLowerCase(); $('cn').textContent = inc.name; $('st').textContent = 'Connecting...';
@@ -780,6 +780,8 @@ async function setupPush() {
   } catch (e) { console.log('push setup failed', e); }
 }
 socket.on('connect', () => setupPush());
+
+let autoAnswer = /[?&]answer=1/.test(location.search); // opened by tapping Answer on a call notification
 
 // ---------- boot ----------
 const saved = localStorage.getItem('diaa_user');
