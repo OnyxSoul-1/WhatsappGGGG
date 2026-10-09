@@ -41,6 +41,7 @@ const io = new Server(server, { cors: { origin: ORIGIN }, maxHttpBufferSize: 5e6
 const users = new Map();        // lowercase name -> { username, avatar, status, socketId }
 const msgOwners = new Map();    // message id -> { from, to }
 const pendingCalls = new Map(); // lowercase name -> { data, exp } (call waiting for someone who is offline)
+const ringing = new Map();      // callee key -> { from, name, type } until they answer
 const busy = new Map();         // lowercase name -> lowercase name of call partner
 const TYPES = ['text', 'photo', 'voice', 'video', 'html', 'file', 'gif', 'poll'];
 const PUSH_HOSTS = /^https:\/\/(fcm\.googleapis\.com|android\.googleapis\.com|updates\.push\.services\.mozilla\.com|[\w.-]+\.push\.apple\.com|[\w.-]+\.notify\.windows\.com)\//;
@@ -55,6 +56,11 @@ function socketOf(name) { const u = users.get(String(name || '').toLowerCase());
 const prevText = m => m.type === 'text' ? m.text.slice(0, 80) : ({ photo: 'Photo', voice: 'Voice message', video: 'Video', html: 'File', file: 'File', gif: 'GIF', poll: 'Poll' })[m.type] || 'New message';
 
 // ---------- push notifications ----------
+function missedCall(k, r) { // leaves a 'Missed call' message and alerts the phone
+  const u = users.get(k); if (!u) return;
+  const m = { id: 'missed-' + Date.now() + Math.random().toString(36).slice(2, 6), from: r.name, to: u.username, text: 'Missed ' + r.type + ' call', type: 'text', fileName: '', time: '', color: '#ffffff' };
+  const t = socketOf(k); if (t) t.emit('receive_message', m); else deliver(k, m);
+}
 async function pushTo(key, payload) {
   if (!vapidPublic) return false;
   const r = await sb('push_subs?username=eq.' + enc(key) + '&select=sub');
@@ -92,7 +98,7 @@ async function flushPending(socket, key) {
   vapidPublic = keys.publicKey;
   console.log('Database ready. Contacts loaded:', users.size);
 })();
-setInterval(() => { for (const [k, c] of pendingCalls) if (c.exp < Date.now()) { pendingCalls.delete(k); freeCall(k); } }, 15000);
+setInterval(() => { for (const [k, c] of pendingCalls) if (c.exp < Date.now()) { pendingCalls.delete(k); freeCall(k); const r = ringing.get(k); if (r) { ringing.delete(k); missedCall(k, r); } } }, 15000);
 
 io.on('connection', (socket) => {
   let hits = 0;
@@ -179,20 +185,24 @@ io.on('connection', (socket) => {
     freeCall(a); // the caller is obviously not in an old call anymore
     if (a === b || busy.has(b)) return socket.emit('call_busy', { name: (users.get(b) || {}).username || userToCall }); // no one can join a call in progress
     const data = { signal, type: type === 'voice' ? 'voice' : 'video', from: socket.data.username, name: socket.data.username };
-    if (target) { busy.set(a, b); busy.set(b, a); return target.emit('incoming_call', data); }
+    if (target) { busy.set(a, b); busy.set(b, a); ringing.set(b, { from: socket.data.username, name: socket.data.username, type: data.type }); return target.emit('incoming_call', data); }
     if (!users.has(b) || !vapidPublic) return socket.emit('call_unavailable');
     // the other person is offline: wake their phone, and hold the call for 45 seconds
     busy.set(a, b); busy.set(b, a); pendingCalls.set(b, { data, exp: Date.now() + 45000 });
-    pushTo(b, { title: data.name + ' is calling...', body: (data.type === 'video' ? 'Video call' : 'Voice call') + '. Tap to answer.', tag: 'call', call: true })
-      .then(ok => { if (!ok) { pendingCalls.delete(b); freeCall(a); socket.emit('call_unavailable'); } });
+    ringing.set(b, { from: socket.data.username, name: socket.data.username, type: data.type });
+    const ring = () => pushTo(b, { title: data.name + ' is calling...', body: (data.type === 'video' ? 'Video call' : 'Voice call') + '. Tap Answer.', tag: 'call', call: true });
+    ring().then(ok => { if (!ok) { pendingCalls.delete(b); ringing.delete(b); freeCall(a); socket.emit('call_unavailable'); } });
+    const t = setInterval(() => { const c = pendingCalls.get(b); if (!c || c.exp < Date.now()) return clearInterval(t); ring(); }, 7000); // keeps buzzing until answered
   });
   socket.on('answer_call', ({ signal, to } = {}) => {
+    ringing.delete(socket.data.key);
     const target = socketOf(to);
     if (target && socket.data.username) target.emit('call_accepted', { signal });
   });
   socket.on('end_call', ({ to } = {}) => {
-    freeCall(socket.data.key);
+    freeCall(socket.data.key); ringing.delete(socket.data.key);
     const k = String(to || '').toLowerCase(); pendingCalls.delete(k);
+    const r = ringing.get(k); if (r && r.from === socket.data.username) { ringing.delete(k); missedCall(k, r); } // caller gave up before it was answered
     const target = socketOf(k); if (target) target.emit('call_ended');
   });
 
@@ -201,6 +211,7 @@ io.on('connection', (socket) => {
     // keep the user in the list so contacts stay visible; they are just offline
     const u = users.get(socket.data.key);
     if (u && u.socketId === socket.id) {
+      for (const [k, r] of ringing) if (r.from === socket.data.username) { ringing.delete(k); pendingCalls.delete(k); missedCall(k, r); }
       const p = freeCall(socket.data.key); if (p) { const t = socketOf(p); if (t) t.emit('call_ended'); }
       u.socketId = null; io.to('members').emit('update_user_list', publicList());
     }
