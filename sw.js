@@ -8,10 +8,14 @@ self.addEventListener('fetch', e => {
 self.addEventListener('notificationclick', e => {
   e.notification.close();
   e.waitUntil(clients.matchAll({ type: 'window', includeUncontrolled: true }).then(l => {
-    if (l.length) { l[0].focus(); if (e.action) l[0].postMessage(e.action); } else clients.openWindow('./');
+    if (l.length) { l[0].focus(); if (e.action) l[0].postMessage(e.action); } else clients.openWindow(e.action === 'answer' ? './?answer=1' : './');
   }));
 });
 self.addEventListener('push', e => {
   let d = {}; try { d = e.data.json(); } catch (x) {}
-  e.waitUntil(self.registration.showNotification(d.title || 'whatsappDIaa', { body: d.body || '', icon: 'icon-192.png', badge: 'icon-192.png', tag: d.tag || 'msg', renotify: true, requireInteraction: !!d.call, vibrate: d.call ? [300, 150, 300, 150, 300] : [120] }));
+  e.waitUntil(self.registration.showNotification(d.title || 'whatsappDIaa', {
+    body: d.body || '', icon: 'icon-192.png', badge: 'icon-192.png', tag: d.tag || 'msg', renotify: true, requireInteraction: !!d.call,
+    vibrate: d.call ? [600, 250, 600, 250, 600, 250, 600] : [120],
+    actions: d.call ? [{ action: 'answer', title: 'Answer' }] : [],
+  }));
 });
